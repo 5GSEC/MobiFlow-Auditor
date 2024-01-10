@@ -1,0 +1,10 @@
+{
+  "ric_config": {
+	"ric_address": "127.0.0.1",
+	"ric_port": 36422
+  },
+
+  "report_config": {
+    "interval": 1000
+  }
+}
