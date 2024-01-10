@@ -139,13 +139,11 @@ class MobiFlowWriter:
                     # generate UE mobiflow record
                     umf, prev_rrc, prev_nas, prev_sec, rrc, nas, sec = ue.generate_mobiflow()
                     self.last_write_time = get_time_ms()
-                    # Assign lock
-                    acquire_lock(0)
+                    # sqlite3 will handle concurrent write
                     insert_stmt = self.generate_insert_statement(umf, self.ue_mobiflow_table_name)
                     logging.info("[MobiFlow] Writing UE Mobiflow to DB: " + insert_stmt)
                     self.db.cursor().execute(insert_stmt)
                     self.db.commit()
-                    release_lock(0)
                     # update BS
                     bs = fb.get_bs(umf.bs_id)
                     if bs is not None:
@@ -156,13 +154,11 @@ class MobiFlowWriter:
                     # generate BS mobiflow record
                     bmf = bs.generate_mobiflow()
                     self.last_write_time = get_time_ms()
-                    # Assign lock
-                    acquire_lock(0)
+                    # sqlite3 will handle concurrent write
                     insert_stmt = self.generate_insert_statement(bmf, self.bs_mobiflow_table_name)
                     logging.info("[MobiFlow] Writing BS Mobiflow to DB: " + insert_stmt)
                     self.db.cursor().execute(insert_stmt)
                     self.db.commit()
-                    release_lock(0)
             if write_should_end:  # end writing if no mobiflow record to update
                 break
 
