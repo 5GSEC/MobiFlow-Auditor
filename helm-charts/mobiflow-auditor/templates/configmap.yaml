@@ -16,4 +16,6 @@ data:
 {{ .Files.Get "files/configs/config.json" | indent 4}}
   onos.json: |-
 {{ .Files.Get "files/configs/onos.json" | indent 4}}
+  mobiflow.json: |-
+{{ .Files.Get "files/configs/mobiflow.json" | indent 4}}
 

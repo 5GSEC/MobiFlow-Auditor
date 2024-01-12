@@ -1,14 +1,11 @@
-import logging
-import threading
 import datetime
-import time
-import sqlite3
+from pymongo import MongoClient
 from .lockutil import *
 from .mobiflow import *
 from .factbase import FactBase
 
 class MobiFlowWriter:
-    def __init__(self, csv_file, db_name, maintenance_time_threshold=0):
+    def __init__(self, csv_file, db_name, port):
         self.csv_file = csv_file
         self.db_name = db_name
         # init csv file if necessary
@@ -16,7 +13,9 @@ class MobiFlowWriter:
             self.clear_file()
         self.last_write_time = 0
         # init db if necessary
+        self.client = None
         self.db = None
+        self.db_port = port
         self.ue_mobiflow_table_name = "ue_mobiflow"
         self.bs_mobiflow_table_name = "bs_mobiflow"
         if self.db_name != "":
@@ -27,12 +26,15 @@ class MobiFlowWriter:
         # self.maintenance_thread.start()
 
     def init_db(self):
-        self.db = sqlite3.connect(self.db_name)
-        cursor = self.db.cursor()
-        # Create tables if not exist
-        cursor.execute(self.generate_create_table_statement(UEMobiFlow(), self.ue_mobiflow_table_name))
-        cursor.execute(self.generate_create_table_statement(BSMobiFlow(), self.bs_mobiflow_table_name))
-        self.db.commit()
+        self.client = MongoClient(f"mongodb://{self.db_name}:{self.db_port}/")
+        self.db = self.client[f"{self.db_name}"]
+        #
+        # self.db = sqlite3.connect(self.db_name)
+        # cursor = self.db.cursor()
+        # # Create tables if not exist
+        # cursor.execute(self.generate_create_table_statement(UEMobiFlow(), self.ue_mobiflow_table_name))
+        # cursor.execute(self.generate_create_table_statement(BSMobiFlow(), self.bs_mobiflow_table_name))
+        # self.db.commit()
 
     @staticmethod
     def generate_create_table_statement(class_instance, table_name):
@@ -73,6 +75,14 @@ class MobiFlowWriter:
 
         insert_statement = f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({', '.join(values)});"
         return insert_statement
+
+    @staticmethod
+    def generate_key_value_mobiflow(class_instance):
+        attributes = {}
+        for a in class_instance.__dict__.keys():
+            if str(a) != "":
+                attributes[str(a)] = getattr(class_instance, str(a))
+        return attributes
 
     def clear_db(self):
         if self.db is None:
@@ -131,6 +141,8 @@ class MobiFlowWriter:
 
     # write mobiflow to a database
     def write_mobiflow_db(self, fb: FactBase) -> None:
+        collection_bs_mobiflow = self.db[self.bs_mobiflow_table_name]
+        collection_ue_mobiflow = self.db[self.ue_mobiflow_table_name]
         while True:
             write_should_end = True
             for ue in fb.get_all_ue():
@@ -139,11 +151,10 @@ class MobiFlowWriter:
                     # generate UE mobiflow record
                     umf, prev_rrc, prev_nas, prev_sec, rrc, nas, sec = ue.generate_mobiflow()
                     self.last_write_time = get_time_ms()
-                    # sqlite3 will handle concurrent write
-                    insert_stmt = self.generate_insert_statement(umf, self.ue_mobiflow_table_name)
-                    logging.info("[MobiFlow] Writing UE Mobiflow to DB: " + insert_stmt)
-                    self.db.cursor().execute(insert_stmt)
-                    self.db.commit()
+                    # mongodb will handle concurrent write
+                    ue_mf_data = self.generate_key_value_mobiflow(umf)
+                    logging.info("[MobiFlow] Writing UE Mobiflow to DB: " + str(ue_mf_data))
+                    collection_ue_mobiflow.insert_one(ue_mf_data)
                     # update BS
                     bs = fb.get_bs(umf.bs_id)
                     if bs is not None:
@@ -154,31 +165,12 @@ class MobiFlowWriter:
                     # generate BS mobiflow record
                     bmf = bs.generate_mobiflow()
                     self.last_write_time = get_time_ms()
-                    # sqlite3 will handle concurrent write
-                    insert_stmt = self.generate_insert_statement(bmf, self.bs_mobiflow_table_name)
-                    logging.info("[MobiFlow] Writing BS Mobiflow to DB: " + insert_stmt)
-                    self.db.cursor().execute(insert_stmt)
-                    self.db.commit()
+                    # mongodb will handle concurrent write
+                    bs_mf_data = self.generate_key_value_mobiflow(bmf)
+                    logging.info("[MobiFlow] Writing BS Mobiflow to DB: " + str(bs_mf_data))
+                    collection_bs_mobiflow.insert_one(bs_mf_data)
             if write_should_end:  # end writing if no mobiflow record to update
                 break
-
-    # P-Best only: support maintenance event
-    def pbest_write_maintenance(self):
-        f = open(self.csv_file, "a")
-        # write a maintenance event to wake up PBest if necessary
-        while True:
-            cur_time = get_time_ms()
-            if self.last_write_time != 0 and cur_time - self.last_write_time > self.maintenance_time_threshold:
-                # Assign lock
-                acquire_lock(f)
-                maintenance_event = MOBIFLOW_DELIMITER.join(["MAINTENANCE", str(cur_time)])
-                logging.info("[MobiFlow] Writing Maintenance event: " + maintenance_event.__str__())
-                self.last_write_time = cur_time
-                f.write(maintenance_event + "\n")
-                f.flush()
-                release_lock(f)
-            time.sleep(self.maintenance_time_threshold / 1000)
-        f.close()
 
     def clear_file(self) -> None:
         f = open(self.csv_file, "w")

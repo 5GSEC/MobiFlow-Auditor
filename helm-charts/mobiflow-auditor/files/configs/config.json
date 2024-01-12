@@ -2,17 +2,6 @@
   "report_period": {
     "interval": 1000,
     "granularity": 1000
-  },
-
-  "mobiflow": {
-    "csv_file": "",
-    "db_name": "/usr/local/mobiflow.db"
-  },
-
-  "pbest": {
-    "pbest_exec_name": "./main",
-    "pbest_log_path": "/usr/local/pbest.out",
-    "maintenance_time_threshold": 5000
   }
 }
 

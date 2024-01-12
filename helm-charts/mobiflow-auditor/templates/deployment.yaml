@@ -13,10 +13,13 @@ spec:
   selector:
     matchLabels:
       name: {{ template "mobiflow-auditor.fullname" . }}
-      app: facebook
-      type: kpimon
+      app: mobiflow-auditor
       resource: {{ template "mobiflow-auditor.fullname" . }}
   {{- include "mobiflow-auditor.selectorLabels" . | nindent 6 }}
+  ports:
+    - protocol: TCP
+      port: 27017
+      targetPort: 27017
   template:
     metadata:
       annotations:
@@ -42,9 +45,12 @@ spec:
             - "secsm/main.py"
             - "--path={{ .Values.config.servicePath }}/config.json"
             - "--ric-config={{ .Values.config.configPath }}/onos.json"
+            - "--mobiflow-config={{ .Values.config.servicePath }}/mobiflow.json"
           ports:
             - name: http
               containerPort: 8080
+            - name: db
+              containerPort: 27017
           startupProbe:
             httpGet:
               path: /status

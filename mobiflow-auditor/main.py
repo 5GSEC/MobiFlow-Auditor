@@ -48,21 +48,18 @@ def main(args: argparse.Namespace) -> None:
 
     with open(args.path) as f:
         app_config = json.load(f)
-        init_global(app_config)
-        sdk.run(async_main(app_config, e2_client, sdl_client), args.path)
+    with open(args.mobiflow_config) as f:
+        mobiflow_config = json.load(f)
+
+    init_global(mobiflow_config)
+    sdk.run(async_main(app_config, e2_client, sdl_client), args.path)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="secsm xApp.")
-    parser.add_argument(
-        "--path", type=str, help="path to the service's JSON configuration file"
-    )
-    parser.add_argument(
-        "--ric-config",
-        type=str,
-        help="ric module config",
-        default="/etc/fb/config/onos.json",
-    )
+    parser = argparse.ArgumentParser(description="MobiFlow Auditor xApp.")
+    parser.add_argument("--path", type=str, help="path to the service's JSON configuration file")
+    parser.add_argument("--ric-config", type=str, help="ric module config", default="/etc/fb/config/onos.json")
+    parser.add_argument("--mobiflow-config", type=str, help="mobiflow config")
     args = parser.parse_args()
     main(args)
 

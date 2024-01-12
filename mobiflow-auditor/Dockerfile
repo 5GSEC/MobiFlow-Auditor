@@ -19,4 +19,7 @@ RUN pip install ./secsm --no-cache-dir
 COPY mobiflow-auditor ./secsm
 RUN pip install ./secsm --no-cache-dir
 
+# install mongo DB
+RUN pip install pymongo
+
 ENTRYPOINT [ "python" ]
