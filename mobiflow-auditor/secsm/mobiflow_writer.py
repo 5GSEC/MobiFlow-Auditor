@@ -1,13 +1,13 @@
 import datetime
-from pymongo import MongoClient
+import sqlite3
 from .lockutil import *
 from .mobiflow import *
 from .factbase import FactBase
 
 class MobiFlowWriter:
-    def __init__(self, csv_file, db_name, port):
+    def __init__(self, csv_file, db_path):
         self.csv_file = csv_file
-        self.db_name = db_name
+        self.db_path = db_path
         # init csv file if necessary
         if self.csv_file != "":
             self.clear_file()
@@ -15,26 +15,18 @@ class MobiFlowWriter:
         # init db if necessary
         self.client = None
         self.db = None
-        self.db_port = port
         self.ue_mobiflow_table_name = "ue_mobiflow"
         self.bs_mobiflow_table_name = "bs_mobiflow"
-        if self.db_name != "":
+        if self.db_path != "":
             self.init_db()
-        # start a new threat to track maintenance event
-        # self.maintenance_time_threshold = maintenance_time_threshold  # in ms
-        # self.maintenance_thread = threading.Thread(target=self.pbest_write_maintenance)
-        # self.maintenance_thread.start()
 
     def init_db(self):
-        self.client = MongoClient(f"mongodb://{self.db_name}:{self.db_port}/")
-        self.db = self.client[f"{self.db_name}"]
-        #
-        # self.db = sqlite3.connect(self.db_name)
-        # cursor = self.db.cursor()
-        # # Create tables if not exist
-        # cursor.execute(self.generate_create_table_statement(UEMobiFlow(), self.ue_mobiflow_table_name))
-        # cursor.execute(self.generate_create_table_statement(BSMobiFlow(), self.bs_mobiflow_table_name))
-        # self.db.commit()
+        self.db = sqlite3.connect(self.db_path)
+        cursor = self.db.cursor()
+        # Create tables if not exist
+        cursor.execute(self.generate_create_table_statement(UEMobiFlow(), self.ue_mobiflow_table_name))
+        cursor.execute(self.generate_create_table_statement(BSMobiFlow(), self.bs_mobiflow_table_name))
+        self.db.commit()
 
     @staticmethod
     def generate_create_table_statement(class_instance, table_name):
@@ -151,11 +143,12 @@ class MobiFlowWriter:
                     # generate UE mobiflow record
                     umf, prev_rrc, prev_nas, prev_sec, rrc, nas, sec = ue.generate_mobiflow()
                     self.last_write_time = get_time_ms()
-                    # mongodb will handle concurrent write
-                    ue_mf_data = self.generate_key_value_mobiflow(umf)
-                    logging.info("[MobiFlow] Writing UE Mobiflow to DB: " + str(ue_mf_data))
-                    collection_ue_mobiflow.insert_one(ue_mf_data)
-                    # update BS
+                    # sqlite3 will handle concurrent write
+                    insert_stmt = self.generate_insert_statement(umf, self.ue_mobiflow_table_name)
+                    logging.info("[MobiFlow] Writing UE Mobiflow to DB: " + insert_stmt)
+                    self.db.cursor().execute(insert_stmt)
+                    self.db.commit()
+					# update BS
                     bs = fb.get_bs(umf.bs_id)
                     if bs is not None:
                         bs.update_counters(prev_rrc, prev_nas, prev_sec, rrc, nas, sec)
@@ -165,10 +158,11 @@ class MobiFlowWriter:
                     # generate BS mobiflow record
                     bmf = bs.generate_mobiflow()
                     self.last_write_time = get_time_ms()
-                    # mongodb will handle concurrent write
-                    bs_mf_data = self.generate_key_value_mobiflow(bmf)
-                    logging.info("[MobiFlow] Writing BS Mobiflow to DB: " + str(bs_mf_data))
-                    collection_bs_mobiflow.insert_one(bs_mf_data)
+					# sqlite3 will handle concurrent write
+                    insert_stmt = self.generate_insert_statement(umf, self.ue_mobiflow_table_name)
+                    logging.info("[MobiFlow] Writing UE Mobiflow to DB: " + insert_stmt)
+                    self.db.cursor().execute(insert_stmt)
+                    self.db.commit()
             if write_should_end:  # end writing if no mobiflow record to update
                 break
 

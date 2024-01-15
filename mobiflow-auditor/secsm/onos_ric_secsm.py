@@ -56,15 +56,14 @@ mf_writer = None
 
 def init_global(mobiflow_config: Dict[str, Any]):
     # load configs
-    db_name = mobiflow_config["mobiflow"]["mongo_db_name"]
-    db_port = int(mobiflow_config["mobiflow"]["mongo_db_port"])
+    db_path = mobiflow_config["mobiflow"]["sqlite3_db_path"]
     csv_file = mobiflow_config["pbest"]["pbest_csv_file"]
     pbest_exec_name = mobiflow_config["pbest"]["pbest_exec_name"]
     pbest_log_path = mobiflow_config["pbest"]["pbest_log_path"]
     maintenance_time_threshold = int(mobiflow_config["pbest"]["maintenance_time_threshold"])
     # Init mobiflow writer configs
     global mf_writer
-    mf_writer = MobiFlowWriter(csv_file, db_name, db_port)
+    mf_writer = MobiFlowWriter(csv_file, db_path)
 
 async def subscribe(
     app_config: Dict[str, Any],

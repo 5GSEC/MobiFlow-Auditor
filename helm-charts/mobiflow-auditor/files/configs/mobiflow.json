@@ -1,5 +1,6 @@
 {
   "mobiflow": {
+	"sqlite3_db_path": "/etc/mobiflow/mobiflow.db",
     "mongo_db_name": "mobiflow",
     "mongo_db_port": 27017
   },

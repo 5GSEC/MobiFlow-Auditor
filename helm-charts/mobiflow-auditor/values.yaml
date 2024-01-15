@@ -23,6 +23,7 @@ config:
     e2tEndpoint: "onos-e2t:5150"
     topoEndpoint: "onos-topo:5150"
   mobiflow:
+    sqlite3_db_path: "/etc/mobiflow/"
     mongo_db_port: 27017
 
 resources: {}

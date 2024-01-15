@@ -16,18 +16,13 @@ spec:
       app: mobiflow-auditor
       resource: {{ template "mobiflow-auditor.fullname" . }}
   {{- include "mobiflow-auditor.selectorLabels" . | nindent 6 }}
-  ports:
-    - protocol: TCP
-      port: 27017
-      targetPort: 27017
   template:
     metadata:
       annotations:
         proxy.onosproject.org/inject: "true"
       labels:
         name: {{ template "mobiflow-auditor.fullname" . }}
-        app: facebook
-        type: kpimon
+        app: mobiflow-auditor
         resource: {{ template "mobiflow-auditor.fullname" . }}
     {{- include "mobiflow-auditor.selectorLabels" . | nindent 8 }}
     spec:
@@ -49,8 +44,6 @@ spec:
           ports:
             - name: http
               containerPort: 8080
-            - name: db
-              containerPort: 27017
           startupProbe:
             httpGet:
               path: /status
@@ -70,6 +63,8 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 10
           volumeMounts:
+            - name: db-storage
+              mountPath: {{ .Values.config.mobiflow.sqlite3_db_path }}
             - name: secret
               mountPath: /etc/onos/certs
               readOnly: true
@@ -85,6 +80,9 @@ spec:
           resources:
       {{- toYaml .Values.resources | nindent 12 }}
       volumes:
+        - name: db-storage
+        #  persistentVolumeClaim:
+        #    claimName: db-pvc
         - name: secret
           secret:
             secretName: {{ template "mobiflow-auditor.fullname" . }}-secret
