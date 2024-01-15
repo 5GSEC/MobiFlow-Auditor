@@ -25,6 +25,7 @@ config:
   mobiflow:
     sqlite3_db_path: "/etc/mobiflow/"
     mongo_db_port: 27017
+    rpc_port: 50051   
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious

@@ -63,6 +63,9 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 10
           volumeMounts:
+            - name: mobiflow
+              mountPath: {{ .Values.config.mobiflow.sqlite3_db_path }}
+              readOnly: false
             - name: secret
               mountPath: /etc/onos/certs
               readOnly: true
@@ -77,7 +80,51 @@ spec:
               readOnly: false
           resources:
       {{- toYaml .Values.resources | nindent 12 }}
+        - name: "rpc-server"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "secsm/main_server.py"
+            - "--mobiflow-config={{ .Values.config.servicePath }}/mobiflow.json"
+          ports:
+            - name: http
+              containerPort: 8080
+          startupProbe:
+            httpGet:
+              path: /status
+              port: 8080
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /status
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /status
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          volumeMounts:
+            - name: mobiflow
+              mountPath: {{ .Values.config.mobiflow.sqlite3_db_path }}
+              readOnly: false
+            - name: secret
+              mountPath: /etc/onos/certs
+              readOnly: true
+            - name: config
+              mountPath: {{ .Values.config.servicePath }}
+              readOnly: false
+            - name: onos
+              mountPath: {{ .Values.config.configPath }}
+              readOnly: false
+            - name: staticfiles
+              mountPath: /tmp
+              readOnly: false
       volumes:
+        - name: mobiflow
         - name: secret
           secret:
             secretName: {{ template "mobiflow-auditor.fullname" . }}-secret

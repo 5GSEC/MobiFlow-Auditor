@@ -1,5 +1,6 @@
 import datetime
 import sqlite3
+import logging
 from .lockutil import *
 from .mobiflow import *
 from .factbase import FactBase
@@ -21,7 +22,7 @@ class MobiFlowWriter:
             self.init_db()
 
     def init_db(self):
-        self.db = sqlite3.connect(self.db_path)
+        self.db = sqlite3.connect(self.db_path, check_same_thread=False)
         cursor = self.db.cursor()
         # Create tables if not exist
         cursor.execute(self.generate_create_table_statement(UEMobiFlow(), self.ue_mobiflow_table_name))
@@ -91,7 +92,7 @@ class MobiFlowWriter:
     def write_mobiflow(self, fb: FactBase) -> None:
         if self.csv_file != "":
             self.write_mobiflow_csv(fb)
-        elif self.db_name != "":
+        elif self.db_path != "":
             self.write_mobiflow_db(fb)
 
     # write mobiflow to a CSV file
@@ -157,7 +158,7 @@ class MobiFlowWriter:
                     bmf = bs.generate_mobiflow()
                     self.last_write_time = get_time_ms()
                     # sqlite3 will handle concurrent write
-                    insert_stmt = self.generate_insert_statement(bmf, self.ue_mobiflow_table_name)
+                    insert_stmt = self.generate_insert_statement(bmf, self.bs_mobiflow_table_name)
                     logging.info("[MobiFlow] Writing BS Mobiflow to DB: " + insert_stmt)
                     self.db.cursor().execute(insert_stmt)
                     self.db.commit()
@@ -174,3 +175,4 @@ class MobiFlowWriter:
     @staticmethod
     def timestamp2str(ts):
         return datetime.datetime.fromtimestamp(ts/1000).__str__() # convert ms into s
+

@@ -13,12 +13,12 @@ class MobiFlowService(MobiFlowQueryServicer):
 
     def init_db_conn(self):
         # Connect to SQLite database (local.db)
-        self.db = sqlite3.connect(self.db_path)
+        self.db = sqlite3.connect(self.db_path, check_same_thread=False)
 
     def get_db_cursor(self):
         return self.db.cursor()
 
-    def mobiflow_query_response(self, request, context):
+    def MobiFlowQuery(self, request, context):
         request_initiator = request.name
         request_table = request.table
 
@@ -30,8 +30,8 @@ class MobiFlowService(MobiFlowQueryServicer):
         result = cursor.fetchone()
 
         if result:
-            _id, value, timestamp = result
-            return MobiFlowQueryResponse(value=value, timestamp=str(timestamp))
+            return MobiFlowQueryResponse(message=str(result))
         else:
-            return MobiFlowQueryResponse(value="No data available", timestamp="")
+            return MobiFlowQueryResponse(message="No data available")
+
 

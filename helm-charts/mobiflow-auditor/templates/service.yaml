@@ -24,3 +24,7 @@ spec:
   ports:
     - name: http
       port: 8080
+    - name: rpc
+      protocol: TCP
+      port: {{ .Values.config.mobiflow.rpc_port }}
+      targetPort: {{ .Values.config.mobiflow.rpc_port }}
