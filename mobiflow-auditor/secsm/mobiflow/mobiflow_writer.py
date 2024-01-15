@@ -133,8 +133,6 @@ class MobiFlowWriter:
 
     # write mobiflow to a database
     def write_mobiflow_db(self, fb: FactBase) -> None:
-        collection_bs_mobiflow = self.db[self.bs_mobiflow_table_name]
-        collection_ue_mobiflow = self.db[self.ue_mobiflow_table_name]
         while True:
             write_should_end = True
             for ue in fb.get_all_ue():
@@ -148,7 +146,7 @@ class MobiFlowWriter:
                     logging.info("[MobiFlow] Writing UE Mobiflow to DB: " + insert_stmt)
                     self.db.cursor().execute(insert_stmt)
                     self.db.commit()
-					# update BS
+                    # update BS
                     bs = fb.get_bs(umf.bs_id)
                     if bs is not None:
                         bs.update_counters(prev_rrc, prev_nas, prev_sec, rrc, nas, sec)
@@ -158,9 +156,9 @@ class MobiFlowWriter:
                     # generate BS mobiflow record
                     bmf = bs.generate_mobiflow()
                     self.last_write_time = get_time_ms()
-					# sqlite3 will handle concurrent write
-                    insert_stmt = self.generate_insert_statement(umf, self.ue_mobiflow_table_name)
-                    logging.info("[MobiFlow] Writing UE Mobiflow to DB: " + insert_stmt)
+                    # sqlite3 will handle concurrent write
+                    insert_stmt = self.generate_insert_statement(bmf, self.ue_mobiflow_table_name)
+                    logging.info("[MobiFlow] Writing BS Mobiflow to DB: " + insert_stmt)
                     self.db.cursor().execute(insert_stmt)
                     self.db.commit()
             if write_should_end:  # end writing if no mobiflow record to update

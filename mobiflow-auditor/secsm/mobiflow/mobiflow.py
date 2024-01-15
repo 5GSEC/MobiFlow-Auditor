@@ -1,5 +1,4 @@
 import time
-import logging
 from enum import Enum
 
 def get_time_ms():

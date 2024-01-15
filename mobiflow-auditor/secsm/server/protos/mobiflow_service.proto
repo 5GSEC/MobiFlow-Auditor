@@ -1,0 +1,22 @@
+// pip3 install grpcio grpcio-tools
+// python3 -m grpc_tools.protoc -I./mobiflow-auditor/secsm/server/protos --python_out=./mobiflow-auditor/secsm/server/protos --pyi_out=./mobiflow-auditor/secsm/server/protos --grpc_python_out=./mobiflow-auditor/secsm/server/protos ./mobiflow-auditor/secsm/server/protos/mobiflow_service.proto
+
+// Syntax definition
+syntax = "proto3";
+
+// The service definition.
+service MobiFlowQuery {
+  // Sends a greeting
+  rpc MobiFlowQuery (MobiFlowQueryRequest) returns (MobiFlowQueryResponse) {}
+}
+
+// The request message containing the request initiator's name.
+message MobiFlowQueryRequest {
+  string name = 1;
+  string table = 2;
+}
+
+// The response message containing the greetings
+message MobiFlowQueryResponse {
+  string message = 1;
+}

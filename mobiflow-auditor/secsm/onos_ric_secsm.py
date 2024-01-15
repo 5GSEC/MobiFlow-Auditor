@@ -6,7 +6,6 @@
 
 import asyncio
 import logging
-import time
 import threading
 from typing import Any, Dict
 
@@ -42,10 +41,14 @@ from onos_e2_sm.e2smkpmv2.v2 import (
 )
 
 from .metrics import CUSTOM_COLLECTOR
-from .encoding import *
-from .mobiflow import *
-from .factbase import *
-from .mobiflow_writer import *
+from .mobiflow.encoding import *
+from .mobiflow.factbase import *
+from .mobiflow.mobiflow_writer import *
+
+from concurrent import futures
+import grpc
+from .server.server import MobiFlowService
+from .server.protos.mobiflow_service_pb2_grpc import add_MobiFlowQueryServicer_to_server
 
 KPM_SERVICE_MODEL_OID_V2 = "1.3.6.1.4.1.53148.1.2.2.2"
 
@@ -53,17 +56,30 @@ KPM_SERVICE_MODEL_OID_V2 = "1.3.6.1.4.1.53148.1.2.2.2"
 fb = FactBase()
 lock = threading.Lock()
 mf_writer = None
+rpc_server = None
 
 def init_global(mobiflow_config: Dict[str, Any]):
     # load configs
     db_path = mobiflow_config["mobiflow"]["sqlite3_db_path"]
+    rpc_port = mobiflow_config["mobiflow"]["rpc_port"]
     csv_file = mobiflow_config["pbest"]["pbest_csv_file"]
     pbest_exec_name = mobiflow_config["pbest"]["pbest_exec_name"]
     pbest_log_path = mobiflow_config["pbest"]["pbest_log_path"]
     maintenance_time_threshold = int(mobiflow_config["pbest"]["maintenance_time_threshold"])
+    # Start rpc server
+    start_rpc_server(db_path, rpc_port)
     # Init mobiflow writer configs
     global mf_writer
     mf_writer = MobiFlowWriter(csv_file, db_path)
+
+def start_rpc_server(db_path, rpc_port):
+    global rpc_server
+    rpc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    add_MobiFlowQueryServicer_to_server(MobiFlowService(db_path), rpc_server)
+    rpc_server.add_insecure_port(f"[::]:{rpc_port}")
+    rpc_server.start()
+    logging.info(f"Server started, listening on f{rpc_port}")
+    rpc_server.wait_for_termination()
 
 async def subscribe(
     app_config: Dict[str, Any],

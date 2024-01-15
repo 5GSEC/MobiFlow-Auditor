@@ -8,6 +8,8 @@ FROM python:3.8-slim
 # install all deps
 WORKDIR /usr/local
 
+RUN pip install grpcio grpcio-tools
+
 COPY onos_e2_sm ./onos_e2_sm
 RUN pip install --upgrade pip ./onos_e2_sm --no-cache-dir
 
