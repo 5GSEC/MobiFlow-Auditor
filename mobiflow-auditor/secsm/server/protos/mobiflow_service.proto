@@ -1,7 +1,6 @@
 // pip3 install grpcio grpcio-tools
-// cd MobiFlow-Auditor (make sure it is at the root folder)
-// python3 -m grpc_tools.protoc --proto_path=. --python_out=. --pyi_out=. --grpc_python_out=. mobiflow-auditor/secsm/server/protos/mobiflow_service.proto
-// copy the generated files into server/protos, protoc by default will convert - into _, so output will be at mobiflow_auditor at root
+// cd MobiFlow-Auditor/mobiflow-auditor (make sure it is at the MobiFlow-Auditor/mobiflow-auditor with main.py)
+// python3 -m grpc_tools.protoc --proto_path=. --python_out=. --pyi_out=. --grpc_python_out=. secsm/server/protos/mobiflow_service.proto
 
 // Syntax definition
 syntax = "proto3";
