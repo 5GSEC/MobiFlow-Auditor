@@ -1,7 +1,7 @@
 import sqlite3
 import logging
-from protos.mobiflow_service_pb2_grpc import MobiFlowQueryServicer
-from protos.mobiflow_service_pb2 import MobiFlowQueryResponse
+from .protos.mobiflow_service_pb2_grpc import MobiFlowQueryServicer
+from .protos.mobiflow_service_pb2 import MobiFlowQueryResponse
 
 class MobiFlowService(MobiFlowQueryServicer):
     def __init__(self, db_path, rpc_port=50051):

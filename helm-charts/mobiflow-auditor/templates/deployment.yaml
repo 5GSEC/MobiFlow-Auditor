@@ -63,8 +63,6 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 10
           volumeMounts:
-            - name: db-storage
-              mountPath: {{ .Values.config.mobiflow.sqlite3_db_path }}
             - name: secret
               mountPath: /etc/onos/certs
               readOnly: true
@@ -80,9 +78,6 @@ spec:
           resources:
       {{- toYaml .Values.resources | nindent 12 }}
       volumes:
-        - name: db-storage
-        #  persistentVolumeClaim:
-        #    claimName: db-pvc
         - name: secret
           secret:
             secretName: {{ template "mobiflow-auditor.fullname" . }}-secret

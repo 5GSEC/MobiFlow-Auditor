@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import mobiflow_service_pb2 as mobiflow__service__pb2
+from mobiflow_auditor.secsm.server.protos import mobiflow_service_pb2 as mobiflow__auditor_dot_secsm_dot_server_dot_protos_dot_mobiflow__service__pb2
 
 
 class MobiFlowQueryStub(object):
@@ -17,8 +17,8 @@ class MobiFlowQueryStub(object):
         """
         self.MobiFlowQuery = channel.unary_unary(
                 '/MobiFlowQuery/MobiFlowQuery',
-                request_serializer=mobiflow__service__pb2.MobiFlowQueryRequest.SerializeToString,
-                response_deserializer=mobiflow__service__pb2.MobiFlowQueryResponse.FromString,
+                request_serializer=mobiflow__auditor_dot_secsm_dot_server_dot_protos_dot_mobiflow__service__pb2.MobiFlowQueryRequest.SerializeToString,
+                response_deserializer=mobiflow__auditor_dot_secsm_dot_server_dot_protos_dot_mobiflow__service__pb2.MobiFlowQueryResponse.FromString,
                 )
 
 
@@ -38,8 +38,8 @@ def add_MobiFlowQueryServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'MobiFlowQuery': grpc.unary_unary_rpc_method_handler(
                     servicer.MobiFlowQuery,
-                    request_deserializer=mobiflow__service__pb2.MobiFlowQueryRequest.FromString,
-                    response_serializer=mobiflow__service__pb2.MobiFlowQueryResponse.SerializeToString,
+                    request_deserializer=mobiflow__auditor_dot_secsm_dot_server_dot_protos_dot_mobiflow__service__pb2.MobiFlowQueryRequest.FromString,
+                    response_serializer=mobiflow__auditor_dot_secsm_dot_server_dot_protos_dot_mobiflow__service__pb2.MobiFlowQueryResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -64,7 +64,7 @@ class MobiFlowQuery(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/MobiFlowQuery/MobiFlowQuery',
-            mobiflow__service__pb2.MobiFlowQueryRequest.SerializeToString,
-            mobiflow__service__pb2.MobiFlowQueryResponse.FromString,
+            mobiflow__auditor_dot_secsm_dot_server_dot_protos_dot_mobiflow__service__pb2.MobiFlowQueryRequest.SerializeToString,
+            mobiflow__auditor_dot_secsm_dot_server_dot_protos_dot_mobiflow__service__pb2.MobiFlowQueryResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
