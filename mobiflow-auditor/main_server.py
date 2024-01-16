@@ -12,7 +12,7 @@ rpc_server = None
 
 def start_rpc_server(db_path, rpc_port):
     global rpc_server
-    logging.info(f"[RPC Server] Server starting, listening on f{rpc_port}")
+    logging.info(f"[RPC Server] Server starting, listening on {rpc_port}")
     rpc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     add_MobiFlowQueryServicer_to_server(MobiFlowService(db_path), rpc_server)
     rpc_server.add_insecure_port(f"[::]:{rpc_port}")
@@ -33,6 +33,12 @@ def init_global(mobiflow_config: Dict[str, Any]):
     rpc_thread.start()
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        format="%(levelname)s %(asctime)s %(filename)s:%(lineno)d] %(message)s",
+        level=logging.INFO,
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
     parser = argparse.ArgumentParser(description="MobiFlow Auditor xApp.")
     parser.add_argument("--mobiflow-config", type=str, help="mobiflow config")
     args = parser.parse_args()
