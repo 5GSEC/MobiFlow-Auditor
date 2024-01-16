@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-from secsm.server.protos import mobiflow_service_pb2 as secsm_dot_server_dot_protos_dot_mobiflow__service__pb2
+from secsm.rpc.protos import mobiflow_service_pb2 as secsm_dot_server_dot_protos_dot_mobiflow__service__pb2
 
 
 class MobiFlowQueryStub(object):
