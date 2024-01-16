@@ -5,8 +5,8 @@ import logging
 import threading
 from concurrent import futures
 from typing import Any, Dict
-from secsm.server.server import MobiFlowService
-from secsm.server.protos.mobiflow_service_pb2_grpc import add_MobiFlowQueryServicer_to_server
+from secsm.rpc.server import MobiFlowService
+from secsm.rpc.protos.mobiflow_service_pb2_grpc import add_MobiFlowQueryServicer_to_server
 
 rpc_server = None
 
