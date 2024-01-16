@@ -15,7 +15,7 @@ def start_rpc_server(db_path, rpc_port):
     logging.info(f"[RPC Server] Server starting, listening on {rpc_port}")
     rpc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     add_MobiFlowQueryServicer_to_server(MobiFlowService(db_path), rpc_server)
-    rpc_server.add_insecure_port(f"[::]:{rpc_port}")
+    rpc_server.add_insecure_port(f"0.0.0.0:{rpc_port}")
     rpc_server.start()
     rpc_server.wait_for_termination()
 
@@ -47,5 +47,6 @@ if __name__ == "__main__":
         mobiflow_config = json.load(f)
 
     init_global(mobiflow_config)
+
 
 
