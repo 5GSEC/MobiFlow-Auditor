@@ -45,7 +45,7 @@ The current MobiFlow message definition is defined in [mobiflow.py](https://gith
 
 The MobiFlow telemetry report process is based on the E2SM-KPM (v2.0) service model (SM). The E2SM implementation can be found at https://github.com/onosproject/onos-e2-sm.
 
-MobiFlow Auditor xApp requires O-RAN compliant RAN nodes to collect and report corresponding data. We have augmented the OpenAirInterface with MobiFlow telemetry support at https://github.com/onehouwong/OAI-5G branch `2023.w23.secsm.sdran`.
+MobiFlow Auditor xApp requires O-RAN compliant RAN nodes to collect and report corresponding data. We have augmented the OpenAirInterface with MobiFlow telemetry support at [https://github.com/onehouwong/OAI-5G](https://github.com/5GSEC/OAI-5G) branch `2023.w23.secsm.sdran`.
 
 
 ## Build the MobiFlow-Auditor xApp
