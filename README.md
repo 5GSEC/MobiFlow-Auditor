@@ -16,8 +16,7 @@ To learn more about the format and structure of MobiFlow, please refer to our pa
 - [A Fine-Grained Telemetry Stream for Security Services in 5G Open Radio Access Networks](https://dl.acm.org/doi/abs/10.1145/3565474.3569070) (EmergingWireless'22)
 - [5G-Spector: An O-RAN Compliant Layer-3 Cellular Attack Detection Service](https://web.cse.ohio-state.edu/~wen.423/papers/5G-Spector-NDSS24.pdf) (NDSS'24)
 
-The current implementation of MobiFlow Auditor is dedicated to the [ONOS RIC](https://docs.onosproject.org/v0.6.0/onos-cli/docs/cli/onos_ric/) on [SD-RAN](https://docs.sd-ran.org/master/index.html) and OpenAirInterface5G (https://gitlab.eurecom.fr/oai/openairinterface5g/).
-It is developed based on the [ONOS RIC's python SDK](https://github.com/onosproject/onos-ric-sdk-py) and guidance from the exemplar [ONOS RAN Intelligent Controller xApps](https://github.com/onosproject/onos-ric-python-apps/)  authored in Python programming language.
+
 
 
 ## Prerequisite
@@ -30,6 +29,25 @@ Create a local docker registry to host docker images:
 sudo docker run -d -p 5000:5000 --restart=always --name registry registry:2
 ```
 
+## Architecture
+
+The current implementation of MobiFlow Auditor is dedicated to the [ONOS RIC](https://docs.onosproject.org/v0.6.0/onos-cli/docs/cli/onos_ric/) on [SD-RAN](https://docs.sd-ran.org/master/index.html) and OpenAirInterface5G (https://gitlab.eurecom.fr/oai/openairinterface5g/).
+
+Its communication with the RAN nodes (via E2) is based on the [ONOS RIC's python SDK](https://github.com/onosproject/onos-ric-sdk-py) and guidance from the exemplar [ONOS RAN Intelligent Controller xApps](https://github.com/onosproject/onos-ric-python-apps/) authored in Python programming language.
+
+MobiFlow Auditor's data can be accessed by other analytic xApps through [gRPC](https://grpc.io/docs/languages/python/). The RPC API definitions can be found at [mobiflow_service.proto](https://github.com/5GSEC/MobiFlow-Auditor/blob/main/mobiflow-auditor/secsm/rpc/protos/mobiflow_service.proto).
+
+
+
+## MobiFlow Structure
+
+The current MobiFlow message definition is defined in [mobiflow.py](https://github.com/5GSEC/MobiFlow-Auditor/blob/main/mobiflow-auditor/secsm/mobiflow/mobiflow.py). It mainly collects (1) the fine-grained layer-3 (RRC and NAS) state transition information of UEs at the message level; (2) the aggregated flow-based statistics from the base stations.
+
+The MobiFlow telemetry report process is based on the E2SM-KPM (v2.0) service model (SM). The E2SM implementation can be found at https://github.com/onosproject/onos-e2-sm.
+
+MobiFlow Auditor xApp requires O-RAN compliant RAN nodes to collect and report corresponding data. We have augmented the OpenAirInterface with MobiFlow telemetry support at https://github.com/onehouwong/OAI-5G branch `2023.w23.secsm.sdran`.
+
+
 ## Build the MobiFlow-Auditor xApp
 
 ```
@@ -40,7 +58,8 @@ After a successful build, the xApp will be compiled as a standalone Docker conta
 
 ```
 $ docker images
-localhost:5000/mobiflow-auditor           latest    722a04c343b8   9 days ago     255MB
+REPOSITORY                           TAG       IMAGE ID       CREATED          SIZE
+localhost:5000/mobiflow-auditor      latest    4842d1672817   26 minutes ago   218MB
 ```
 
 
