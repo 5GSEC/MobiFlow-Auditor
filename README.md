@@ -5,24 +5,24 @@ SPDX-FileCopyrightText: 2019-present Open Networking Foundation <info@opennetwor
 SPDX-License-Identifier: Apache-2.0
 -->
 
-# MobieXpert-xApp
+# MobiFlow-Auditor-xApp
 
-MobieXpert xApp is the first L3 cellular attack detection xApp. 
-MobieXpert’s design is based on the Production-Based Expert System Toolset ([P-BEST](https://ieeexplore.ieee.org/document/766911)) language, 
-which has been widely used for decades in stateful intrusion detection. 
-With MobieXpert, network operators can program stateful production-based IDS rules for detecting a wide range of cellular L3 attacks.
+MobiFlow Auditor is an O-RAN compliant xApp aiming to support ***fine-grained and security-aware statistics monitoring over the RAN data plane***, which is not solved within the default O-RAN standard and service models. We abstract such telemetry streams as **MobiFlow**, a novel security audit trail for holding mobile devices accountable during the link and session setup protocols as they interact with the base station, and interval statistics generated for tracking large-scale patterns of abuse against the base station.
 
-MobieXpert is an essential part of the 5G-Spector artifact. To learn more about 5G-Spector, please refer to our 
-[paper](https://web.cse.ohio-state.edu/~wen.423/papers/5G-Spector-NDSS24.pdf) in NDSS'24
-and the [5G-Spector](https://github.com/5GSEC/5G-Spector) git repository.
+MobiFlow Auditor can drive various analyses. For example, it can drive expert system analysis with MobiExpert (https://github.com/5GSEC/mobi-expert-xapp). MobiExpert xApp that allows network operators can program stateful production-based IDS rules for detecting a wide range of cellular L3 attacks. It features the Production-Based Expert System Toolset ([P-BEST](https://ieeexplore.ieee.org/document/766911)) language. MobiFlow Auditor can also drive AI / ML-based analytics. 
 
-MobieXpert is dedicated for the [ONOS RIC](https://docs.onosproject.org/v0.6.0/onos-cli/docs/cli/onos_ric/) on [SD-RAN](https://docs.sd-ran.org/master/index.html).
+To learn more about the format and structure of MobiFlow, please refer to our papers:
+
+- [A Fine-Grained Telemetry Stream for Security Services in 5G Open Radio Access Networks](https://dl.acm.org/doi/abs/10.1145/3565474.3569070) (EmergingWireless'22)
+- [5G-Spector: An O-RAN Compliant Layer-3 Cellular Attack Detection Service](https://web.cse.ohio-state.edu/~wen.423/papers/5G-Spector-NDSS24.pdf) (NDSS'24)
+
+The current implementation of MobiFlow Auditor is dedicated to the [ONOS RIC](https://docs.onosproject.org/v0.6.0/onos-cli/docs/cli/onos_ric/) on [SD-RAN](https://docs.sd-ran.org/master/index.html) and OpenAirInterface5G (https://gitlab.eurecom.fr/oai/openairinterface5g/).
 It is developed based on the [ONOS RIC's python SDK](https://github.com/onosproject/onos-ric-sdk-py) and guidance from the exemplar [ONOS RAN Intelligent Controller xApps](https://github.com/onosproject/onos-ric-python-apps/)  authored in Python programming language.
 
 
 ## Prerequisite
 
-MobieXpert is built as a Docker container. Refer to the official tutorial (https://docs.docker.com/engine/install/) to install and set up the Docker environment.
+MobiFlow-Auditor is built as a Docker container. Refer to the official tutorial (https://docs.docker.com/engine/install/) to install and set up the Docker environment.
 
 Create a local docker registry to host docker images: 
 
@@ -30,12 +30,7 @@ Create a local docker registry to host docker images:
 sudo docker run -d -p 5000:5000 --restart=always --name registry registry:2
 ```
 
-## TODO
-
-Decide how P-BEST source code is released
-
-
-## Build the MobieXpert xApp
+## Build the MobiFlow-Auditor xApp
 
 ```
 ./build.sh
@@ -49,22 +44,20 @@ localhost:5000/mobiflow-auditor           latest    722a04c343b8   9 days ago   
 ```
 
 
+## Install the MobiFlow-Auditor xApp
 
-
-## Install the MobieXpert xApp
-
-We have provided a default helm chart for deploying MobieXpert on the ONOS RIC via [Kubernetes](https://kubernetes.io/).
+We have provided a default helm chart for deploying MobiFlow-Auditor on the ONOS RIC via [Kubernetes](https://kubernetes.io/) and [Helm](https://helm.sh/).
 
 ```
-./install_secsm-xapp.sh
+./install_xapp.sh
 ```
 
-## Uninstall MobieXpert xApp
+## Uninstall MobiFlow-Auditor xApp
 
-Undeploy the MobieXpert xApp from Kubernetes
+Undeploy the MobiFlow-Auditor xApp from Kubernetes
 
 ```
-./uninstall_secsm-xapp.sh
+./uninstall_xapp.sh
 ```
 
 
