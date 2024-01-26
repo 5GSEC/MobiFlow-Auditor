@@ -71,6 +71,15 @@ We have provided a default helm chart for deploying MobiFlow-Auditor on the ONOS
 ./install_xapp.sh
 ```
 
+Make sure the xApp is up and running:
+
+```
+$ kubectl get pods -n riab
+NAME                                READY   STATUS    RESTARTS   AGE
+mobiflow-auditor-68d598d7fb-vhlqw   3/3     Running   0          4m10s
+...
+```
+
 ## Example output
 
 By running the MobiFlow Auditor on the RIC along with an OAI gNB and nrUE, MobiFlow Auditor will generate and store MobiFlow telemetry. You can check the run-time logs with:
