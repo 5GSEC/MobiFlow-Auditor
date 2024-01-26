@@ -7,9 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 
 # MobiFlow-Auditor-xApp
 
-MobiFlow Auditor is an O-RAN compliant xApp aiming to support ***fine-grained and security-aware statistics monitoring over the RAN data plane***, which is not solved within the default O-RAN standard and service models. We abstract such telemetry streams as **MobiFlow**, a novel security audit trail for holding mobile devices accountable during the link and session setup protocols as they interact with the base station, and interval statistics generated for tracking large-scale patterns of abuse against the base station.
+MobiFlow Auditor is an O-RAN compliant xApp aiming to support ***fine-grained and security-aware statistics monitoring over the RAN data plane***, which is not solved by the default O-RAN standard and service models. We abstract such telemetry streams as **MobiFlow**, a novel security audit trail for holding mobile devices accountable during the link and session setup protocols as they interact with the base station, and interval statistics generated for tracking large-scale patterns of abuse against the base station.
 
-MobiFlow Auditor can drive various analyses. For example, it can drive expert system analysis with MobiExpert (https://github.com/5GSEC/mobi-expert-xapp). MobiExpert xApp that allows network operators can program stateful production-based IDS rules for detecting a wide range of cellular L3 attacks. It features the Production-Based Expert System Toolset ([P-BEST](https://ieeexplore.ieee.org/document/766911)) language. MobiFlow Auditor can also drive AI / ML-based analytics. 
+MobiFlow Auditor can drive various analyses. For example, it can drive expert system analysis with MobiExpert (https://github.com/5GSEC/mobi-expert-xapp). MobiExpert xApp allows network operators to program stateful production-based IDS rules for detecting a wide range of cellular L3 attacks. It features the Production-Based Expert System Toolset ([P-BEST](https://ieeexplore.ieee.org/document/766911)) language. MobiFlow Auditor can also drive AI / ML-based analytics. 
 
 To learn more about the format and structure of MobiFlow, please refer to our papers:
 
@@ -62,6 +62,16 @@ Undeploy the MobiFlow-Auditor xApp from Kubernetes
 
 
 ## Publication
+
+```
+@inproceedings{wen2022fine,
+  title={A fine-grained telemetry stream for security services in 5g open radio access networks},
+  author={Wen, Haohuang and Porras, Phillip and Yegneswaran, Vinod and Lin, Zhiqiang},
+  booktitle={Proceedings of the 1st International Workshop on Emerging Topics in Wireless},
+  pages={18--23},
+  year={2022}
+}
+```
 
 ```
 @inproceedings{5G-Spector:NDSS24,
