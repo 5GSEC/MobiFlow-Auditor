@@ -16,9 +16,8 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    name: {{ template "mobiflow-auditor.fullname" . }}
-    app: facebook
-    type: kpimon
+    name: mobiflow-auditor
+    app: mobiflow-auditor
     resource: {{ template "mobiflow-auditor.fullname" . }}
   {{- include "mobiflow-auditor.selectorLabels" . | nindent 4 }}
   ports:
