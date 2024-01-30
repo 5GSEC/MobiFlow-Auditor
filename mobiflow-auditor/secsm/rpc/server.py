@@ -38,7 +38,7 @@ class MobiFlowService(MobiFlowQueryServicer):
             logging.error(f"[Server] DB instance is NULL, exiting...")
             return
         cursor = db.cursor()
-        cursor.execute(f'SELECT * FROM {request_table} WHERE msg_id > ? ORDER BY timestamp DESC', (last_id,))
+        cursor.execute(f'SELECT * FROM {request_table} WHERE msg_id > ?', (last_id,))
         for row in cursor.fetchall():
             str_list = [str(a) for a in row]
             self.client_last_record[request_initiator][request_table] = int(str_list[1])  # update with latest msg_id
@@ -46,4 +46,5 @@ class MobiFlowService(MobiFlowQueryServicer):
             yield MobiFlowStreamResponse(message=msg)
 
         db.close()
+
 
