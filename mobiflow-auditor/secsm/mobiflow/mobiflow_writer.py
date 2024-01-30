@@ -44,7 +44,7 @@ class MobiFlowWriter:
             data_type = "VARCHAR(255)" if isinstance(value, str) else "INT" if isinstance(value, int) else "TEXT"
             columns.append(f"{attr} {data_type}")
 
-        create_table_statement = f"CREATE TABLE {table_name} (\n    {', '.join(columns)}\n);"
+        create_table_statement = f"CREATE TABLE IF NOT EXISTS {table_name} (\n    {', '.join(columns)}\n);"
         return create_table_statement
 
     @staticmethod
