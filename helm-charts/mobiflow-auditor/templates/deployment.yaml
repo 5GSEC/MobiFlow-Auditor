@@ -89,6 +89,8 @@ spec:
           ports:
             - name: http
               containerPort: 8080
+            - name: rpc
+              containerPort: {{ .Values.config.mobiflow.rpc_port }}
           startupProbe:
             httpGet:
               path: /status
