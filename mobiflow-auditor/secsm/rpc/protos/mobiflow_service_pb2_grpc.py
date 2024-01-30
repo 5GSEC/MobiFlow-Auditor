@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-from secsm.rpc.protos import mobiflow_service_pb2 as secsm_dot_server_dot_protos_dot_mobiflow__service__pb2
+from secsm.rpc.protos import mobiflow_service_pb2 as secsm_dot_rpc_dot_protos_dot_mobiflow__service__pb2
 
 
 class MobiFlowQueryStub(object):
@@ -15,10 +15,10 @@ class MobiFlowQueryStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.MobiFlowQuery = channel.unary_unary(
-                '/MobiFlowQuery/MobiFlowQuery',
-                request_serializer=secsm_dot_server_dot_protos_dot_mobiflow__service__pb2.MobiFlowQueryRequest.SerializeToString,
-                response_deserializer=secsm_dot_server_dot_protos_dot_mobiflow__service__pb2.MobiFlowQueryResponse.FromString,
+        self.MobiFlowStream = channel.unary_stream(
+                '/MobiFlowQuery/MobiFlowStream',
+                request_serializer=secsm_dot_rpc_dot_protos_dot_mobiflow__service__pb2.MobiFlowStreamRequest.SerializeToString,
+                response_deserializer=secsm_dot_rpc_dot_protos_dot_mobiflow__service__pb2.MobiFlowStreamResponse.FromString,
                 )
 
 
@@ -26,9 +26,8 @@ class MobiFlowQueryServicer(object):
     """The service definition.
     """
 
-    def MobiFlowQuery(self, request, context):
-        """Sends a greeting
-        """
+    def MobiFlowStream(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -36,10 +35,10 @@ class MobiFlowQueryServicer(object):
 
 def add_MobiFlowQueryServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'MobiFlowQuery': grpc.unary_unary_rpc_method_handler(
-                    servicer.MobiFlowQuery,
-                    request_deserializer=secsm_dot_server_dot_protos_dot_mobiflow__service__pb2.MobiFlowQueryRequest.FromString,
-                    response_serializer=secsm_dot_server_dot_protos_dot_mobiflow__service__pb2.MobiFlowQueryResponse.SerializeToString,
+            'MobiFlowStream': grpc.unary_stream_rpc_method_handler(
+                    servicer.MobiFlowStream,
+                    request_deserializer=secsm_dot_rpc_dot_protos_dot_mobiflow__service__pb2.MobiFlowStreamRequest.FromString,
+                    response_serializer=secsm_dot_rpc_dot_protos_dot_mobiflow__service__pb2.MobiFlowStreamResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -53,7 +52,7 @@ class MobiFlowQuery(object):
     """
 
     @staticmethod
-    def MobiFlowQuery(request,
+    def MobiFlowStream(request,
             target,
             options=(),
             channel_credentials=None,
@@ -63,8 +62,8 @@ class MobiFlowQuery(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/MobiFlowQuery/MobiFlowQuery',
-            secsm_dot_server_dot_protos_dot_mobiflow__service__pb2.MobiFlowQueryRequest.SerializeToString,
-            secsm_dot_server_dot_protos_dot_mobiflow__service__pb2.MobiFlowQueryResponse.FromString,
+        return grpc.experimental.unary_stream(request, target, '/MobiFlowQuery/MobiFlowStream',
+            secsm_dot_rpc_dot_protos_dot_mobiflow__service__pb2.MobiFlowStreamRequest.SerializeToString,
+            secsm_dot_rpc_dot_protos_dot_mobiflow__service__pb2.MobiFlowStreamResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

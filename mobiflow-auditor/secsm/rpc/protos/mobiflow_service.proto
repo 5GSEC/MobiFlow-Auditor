@@ -1,6 +1,6 @@
 // Protocol buffer definition of MobiFlow RPC services
 // Author: Team SE-RAN (team@5gsec.com)
-// Version v0.0.1
+// Version v0.0.2
 // Install instructions below
 // pip3 install grpcio grpcio-tools
 // cd MobiFlow-Auditor/mobiflow-auditor (make sure it is at the MobiFlow-Auditor/mobiflow-auditor with main.py)
@@ -11,17 +11,14 @@ syntax = "proto3";
 
 // The service definition.
 service MobiFlowQuery {
-  // Sends a greeting
-  rpc MobiFlowQuery (MobiFlowQueryRequest) returns (MobiFlowQueryResponse) {}
+  rpc MobiFlowStream (MobiFlowStreamRequest) returns (stream MobiFlowStreamResponse);
 }
 
-// The request message containing the request initiator's name.
-message MobiFlowQueryRequest {
+message MobiFlowStreamRequest {
   string name = 1;
   string table = 2;
 }
 
-// The response message containing the greetings
-message MobiFlowQueryResponse {
+message MobiFlowStreamResponse {
   string message = 1;
 }
