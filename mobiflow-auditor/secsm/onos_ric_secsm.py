@@ -286,7 +286,9 @@ async def run(
                 app_config, e2_client, sdl_client, e2_node_id, e2_node, report_style
             )
         )
-
-    await asyncio.gather(*subscriptions)
+    try:
+      await asyncio.gather(*subscriptions)
+    except asyncio.exceptions.CancelledError as e:
+      logging.error(e)
 
 
