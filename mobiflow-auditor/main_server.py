@@ -1,7 +1,6 @@
 import argparse
 import json
 import time
-
 import grpc
 import logging
 import asyncio
@@ -19,7 +18,14 @@ async def start_rpc_server(db_path, rpc_port):
     add_MobiFlowQueryServicer_to_server(MobiFlowService(db_path), rpc_server)
     rpc_server.add_insecure_port(f"0.0.0.0:{rpc_port}")
     rpc_server.start()
-    rpc_server.wait_for_termination()
+    # rpc_server.wait_for_termination()
+
+    try:
+        # Keep the server running until terminated
+        await asyncio.Future()  # This future never resolves, effectively keeping the event loop running
+    except asyncio.CancelledError:
+        rpc_server.stop(0)
+        logging.info("[RPC Server] Server stopped")
 
 async def init_global(mobiflow_config: Dict[str, Any]):
     # load configs

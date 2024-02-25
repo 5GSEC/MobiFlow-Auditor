@@ -1,6 +1,8 @@
 import datetime
 import sqlite3
 import logging
+import asyncio
+import time
 from typing import Union
 from .lockutil import *
 from .mobiflow import *
@@ -98,13 +100,14 @@ class MobiFlowWriter:
             self.db.close()
 
     async def write_mobiflow(self, fb: FactBase) -> None:
+        loop = asyncio.get_event_loop()
         if self.csv_file != "":
-            await self.write_mobiflow_csv(fb)
+            await loop.run_in_executor(None, self.write_mobiflow_csv, fb)
         elif self.db_path != "":
-            await self.write_mobiflow_db(fb)
+            await loop.run_in_executor(None, self.write_mobiflow_db, fb)
 
     # write mobiflow to a CSV file
-    async def write_mobiflow_csv(self, fb: FactBase) -> None:
+    def write_mobiflow_csv(self, fb: FactBase) -> None:
         f = open(self.csv_file, "a")
         while True:
             write_should_end = True
@@ -139,7 +142,7 @@ class MobiFlowWriter:
         f.close()
 
     # write mobiflow to a database
-    async def write_mobiflow_db(self, fb: FactBase) -> None:
+    def write_mobiflow_db(self, fb: FactBase) -> None:
         ue_mf_list = []
         bs_mf_list = []
         while True:

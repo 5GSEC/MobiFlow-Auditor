@@ -200,32 +200,32 @@ class UE:
             if self.rrc_state == RRCState.INACTIVE or self.rrc_state == RRCState.RRC_IDLE:
                 self.rrc_state = RRCState.RRC_CONNECTED
 
-        if msg == "RRCConnectionRelease" \
+        elif msg == "RRCConnectionRelease" \
                 or msg == "RRCRelease":
             self.rrc_state = RRCState.RRC_IDLE
             self.nas_state = EMMState.EMM_DEREGISTERED
             self.sec_state = SecState.SEC_CONTEXT_NOT_EXIST
 
-        if msg == "RRCConnectionReject" or msg == "RRCConnectionReestablishmentReject"\
+        elif msg == "RRCConnectionReject" or msg == "RRCConnectionReestablishmentReject"\
                 or msg == "RRCReject":
             self.rrc_state = RRCState.RRC_IDLE
 
-        if msg == "ATTACH_REQUEST" or msg == "RRCConnectionReestablishmentComplete"\
+        elif msg == "ATTACH_REQUEST" or msg == "RRCConnectionReestablishmentComplete"\
                 or msg == "Registrationrequest" or msg == "Servicerequest":
             self.nas_state = EMMState.EMM_REGISTER_INIT
 
-        if msg == "SERVICE_REQUEST": # LTE: The UE shall treat that the service request procedure as successful, when the lower layers indicate that the user plane radio bearer is successfully set up
+        elif msg == "SERVICE_REQUEST": # LTE: The UE shall treat that the service request procedure as successful, when the lower layers indicate that the user plane radio bearer is successfully set up
             self.nas_state = EMMState.EMM_REGISTERED
 
-        if msg == "SecurityModeComplete" \
+        elif msg == "SecurityModeComplete" \
                 or msg == "Securitymodecomplete":
             self.sec_state = SecState.SEC_CONTEXT_EXIST
 
-        if msg == "ATTACH_COMPLETE"\
+        elif msg == "ATTACH_COMPLETE"\
                 or msg == "RRCReconfigurationComplete" or msg == "Registrationcomplete" or msg == "Serviceaccept":
             self.nas_state = EMMState.EMM_REGISTERED
 
-        if msg == "ATTACH_REJECT" or msg == "SERVICE_REJECT" or msg == "DETACH_ACCEPT" or msg == "TRACKING_AREA_UPDATE_REJECT" \
+        elif msg == "ATTACH_REJECT" or msg == "SERVICE_REJECT" or msg == "DETACH_ACCEPT" or msg == "TRACKING_AREA_UPDATE_REJECT" \
                 or msg == "Registrationreject" or msg == "Servicereject" or msg == "DeregistrationacceptUEoriginating":
             self.nas_state = EMMState.EMM_DEREGISTERED
             self.sec_state = SecState.SEC_CONTEXT_NOT_EXIST
@@ -364,4 +364,5 @@ class BS:
         bmf.inactive_timer = self.inactive_timer
         self.should_report = False
         return bmf
+
 

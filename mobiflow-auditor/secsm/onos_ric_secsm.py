@@ -125,8 +125,6 @@ async def subscribe(
         lock.release()
 
         await async_queue.put(0)  # notify mobiflow writer thread
-        # if mf_writer is not None:
-        #     mf_writer.write_mobiflow(fb)
 
         action_def = E2SmKpmActionDefinition(
             ric_style_type=RicStyleType(value=report_style.type),
@@ -277,8 +275,6 @@ async def subscribe(
             #logging.info("======================End SecSM Event========================")
 
             await async_queue.put(0)  # notify mobiflow writer thread
-            # if mf_writer is not None:
-            #     mf_writer.write_mobiflow(fb)
         # thread finish processing all records, relaese lock
         lock.release()
 

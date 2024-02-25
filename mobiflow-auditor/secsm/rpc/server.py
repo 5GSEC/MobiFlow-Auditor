@@ -1,5 +1,6 @@
 import sqlite3
 import logging
+import asyncio
 from .protos.mobiflow_service_pb2_grpc import MobiFlowQueryServicer
 from .protos.mobiflow_service_pb2 import MobiFlowStreamResponse
 
@@ -17,6 +18,11 @@ class MobiFlowService(MobiFlowQueryServicer):
         else:
             logging.error(f"[Server] Invalid DB Path {self.db_path}")
             return None
+
+    async def fetchall_async(self, conn, query):
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(
+            None, lambda: conn.cursor().execute(query).fetchall())
 
     def MobiFlowStream(self, request, context):
         request_initiator = request.name
@@ -37,14 +43,12 @@ class MobiFlowService(MobiFlowQueryServicer):
         if db is None:
             logging.error(f"[Server] DB instance is NULL, exiting...")
             return
-        cursor = db.cursor()
-        cursor.execute(f'SELECT * FROM {request_table} WHERE msg_id > ?', (last_id,))
-        for row in cursor.fetchall():
+
+        query_res = db.cursor().execute(f'SELECT * FROM {request_table} WHERE msg_id > ?', (last_id,)).fetchall()
+        # query_res = await self.fetchall_async(db, query_stmt)
+        for row in query_res:
             str_list = [str(a) for a in row]
             self.client_last_record[request_initiator][request_table] = int(str_list[1])  # update with latest msg_id
             msg = str(self.MOBIFLOW_DELIMITER.join(str_list))
             yield MobiFlowStreamResponse(message=msg)
-
-        db.close()
-
 
