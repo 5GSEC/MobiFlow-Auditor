@@ -1,6 +1,7 @@
 import datetime
 import sqlite3
 import logging
+from typing import Union
 from .lockutil import *
 from .mobiflow import *
 from .factbase import FactBase
@@ -12,7 +13,6 @@ class MobiFlowWriter:
         # init csv file if necessary
         if self.csv_file != "":
             self.clear_file()
-        self.last_write_time = 0
         # init db if necessary
         self.client = None
         self.db = None
@@ -48,7 +48,23 @@ class MobiFlowWriter:
         return create_table_statement
 
     @staticmethod
-    def generate_insert_statement(class_instance, table_name):
+    def generate_insert_statement(list_of_mf: list, table_name: str) -> str:
+
+        def mobiflow_2_sql_val_set(mf: Union[BSMobiFlow, UEMobiFlow]) -> str:
+            attrs = []
+            for a in mf.__dict__.values():
+                if str(a) == "":
+                    attrs.append(" ")  # avoid parse error in C
+                else:
+                    if isinstance(a, str):
+                        attrs.append(f"'{a}'")
+                    else:
+                        attrs.append(str(a))
+            return ", ".join(attrs)
+
+        if len(list_of_mf) <= 0:
+            return ""
+        class_instance = list_of_mf[0]
         attributes = []
         for a in class_instance.__dict__.keys():
             if str(a) == "":
@@ -57,25 +73,17 @@ class MobiFlowWriter:
                 attributes.append(str(a))
 
         columns = []
-        values = []
         for attr in attributes:
-            value = getattr(class_instance, attr)
             columns.append(attr)
-            if isinstance(value, str):
-                values.append(f"'{value}'")
-            else:
-                values.append(str(value))
 
-        insert_statement = f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({', '.join(values)});"
+        values = []
+        for mf in list_of_mf:
+            mf_str = mobiflow_2_sql_val_set(mf)
+            values.append(f"({mf_str})")
+
+        value_str = ",\n\t".join(values)
+        insert_statement = f"INSERT INTO {table_name}\n\t({', '.join(columns)})\nVALUES\n\t{value_str};"
         return insert_statement
-
-    @staticmethod
-    def generate_key_value_mobiflow(class_instance):
-        attributes = {}
-        for a in class_instance.__dict__.keys():
-            if str(a) != "":
-                attributes[str(a)] = getattr(class_instance, str(a))
-        return attributes
 
     def clear_db(self):
         if self.db is None:
@@ -89,14 +97,14 @@ class MobiFlowWriter:
         if self.db is not None:
             self.db.close()
 
-    def write_mobiflow(self, fb: FactBase) -> None:
+    async def write_mobiflow(self, fb: FactBase) -> None:
         if self.csv_file != "":
-            self.write_mobiflow_csv(fb)
+            await self.write_mobiflow_csv(fb)
         elif self.db_path != "":
-            self.write_mobiflow_db(fb)
+            await self.write_mobiflow_db(fb)
 
     # write mobiflow to a CSV file
-    def write_mobiflow_csv(self, fb: FactBase) -> None:
+    async def write_mobiflow_csv(self, fb: FactBase) -> None:
         f = open(self.csv_file, "a")
         while True:
             write_should_end = True
@@ -106,7 +114,6 @@ class MobiFlowWriter:
                     # generate UE mobiflow record
                     umf, prev_rrc, prev_nas, prev_sec, rrc, nas, sec = ue.generate_mobiflow()
                     logging.info("[MobiFlow] Writing UE Mobiflow to CSV: " + umf.__str__())
-                    self.last_write_time = get_time_ms()
                     # Assign lock
                     acquire_lock(f)
                     f.write(umf.__str__() + "\n")
@@ -122,7 +129,6 @@ class MobiFlowWriter:
                     # generate BS mobiflow record
                     bmf = bs.generate_mobiflow()
                     logging.info("[MobiFlow] Writing BS Mobiflow to CSV: " + bmf.__str__())
-                    self.last_write_time = get_time_ms()
                     # Assign lock
                     acquire_lock(f)
                     f.write(bmf.__str__() + "\n")
@@ -133,7 +139,9 @@ class MobiFlowWriter:
         f.close()
 
     # write mobiflow to a database
-    def write_mobiflow_db(self, fb: FactBase) -> None:
+    async def write_mobiflow_db(self, fb: FactBase) -> None:
+        ue_mf_list = []
+        bs_mf_list = []
         while True:
             write_should_end = True
             for ue in fb.get_all_ue():
@@ -141,12 +149,7 @@ class MobiFlowWriter:
                     write_should_end = False
                     # generate UE mobiflow record
                     umf, prev_rrc, prev_nas, prev_sec, rrc, nas, sec = ue.generate_mobiflow()
-                    self.last_write_time = get_time_ms()
-                    # sqlite3 will handle concurrent write
-                    insert_stmt = self.generate_insert_statement(umf, self.ue_mobiflow_table_name)
-                    logging.info("[MobiFlow] Writing UE Mobiflow to DB: " + insert_stmt)
-                    self.db.cursor().execute(insert_stmt)
-                    self.db.commit()
+                    ue_mf_list.append(umf)
                     # update BS
                     bs = fb.get_bs(umf.bs_id)
                     if bs is not None:
@@ -156,14 +159,25 @@ class MobiFlowWriter:
                     write_should_end = False
                     # generate BS mobiflow record
                     bmf = bs.generate_mobiflow()
-                    self.last_write_time = get_time_ms()
-                    # sqlite3 will handle concurrent write
-                    insert_stmt = self.generate_insert_statement(bmf, self.bs_mobiflow_table_name)
-                    logging.info("[MobiFlow] Writing BS Mobiflow to DB: " + insert_stmt)
-                    self.db.cursor().execute(insert_stmt)
-                    self.db.commit()
+                    bs_mf_list.append(bmf)
+
             if write_should_end:  # end writing if no mobiflow record to update
                 break
+
+        # Write to database
+        if len(ue_mf_list) > 0:
+            # sqlite3 will handle concurrent write
+            insert_stmt = self.generate_insert_statement(ue_mf_list, self.ue_mobiflow_table_name)
+            logging.info("[MobiFlow] Writing UE Mobiflow to DB: \n" + insert_stmt)
+            self.db.cursor().execute(insert_stmt)
+            self.db.commit()
+
+        if len(bs_mf_list) > 0:
+            # sqlite3 will handle concurrent write
+            insert_stmt = self.generate_insert_statement(bs_mf_list, self.bs_mobiflow_table_name)
+            logging.info("[MobiFlow] Writing BS Mobiflow to DB: \n" + insert_stmt)
+            self.db.cursor().execute(insert_stmt)
+            self.db.commit()
 
     def clear_file(self) -> None:
         f = open(self.csv_file, "w")
@@ -175,4 +189,5 @@ class MobiFlowWriter:
     @staticmethod
     def timestamp2str(ts):
         return datetime.datetime.fromtimestamp(ts/1000).__str__() # convert ms into s
+
 

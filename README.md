@@ -86,16 +86,26 @@ By running the MobiFlow Auditor on the RIC along with an OAI gNB and nrUE, MobiF
 
 ```
 $ kubectl logs mobiflow-auditor-68d598d7fb-vhlqw -n riab -c mobiflow-auditor
-INFO 2024-01-26 21:04:28 web_log.py:206] 192.168.121.113 [26/Jan/2024:21:04:28 +0000] "GET /status HTTP/1.1" 200 180 "-" "kube-probe/1.23"
-INFO 2024-01-26 21:04:35 onos_ric_secsm.py:106] Adding new BS: e2:1/e00_e0000
-INFO 2024-01-26 21:04:35 mobiflow_writer.py:162] [MobiFlow] Writing BS Mobiflow to DB: INSERT INTO bs_mobiflow (msg_type, msg_id, timestamp, mobiflow_ver, generator_name, bs_id, mcc, mnc, tac, cell_id, report_period, connected_ue_cnt, idle_ue_cnt, max_ue_cnt, initial_timer, inactive_timer) VALUES ('BS', 0, 1706303075078.2427, 'v2.0', 'SECSM', 0, 0, 0, 0, 'e0000', 1000, 0, 0, 0, 1706303075078.195, 0);
+INFO 2024-02-25 19:22:02 web_log.py:206] 192.168.121.113 [25/Feb/2024:19:22:02 +0000] "GET /status HTTP/1.1" 200 180 "-" "kube-probe/1.23"
+INFO 2024-02-25 19:22:02 web_log.py:206] 192.168.121.113 [25/Feb/2024:19:22:02 +0000] "GET /status HTTP/1.1" 200 180 "-" "kube-probe/1.23"
+INFO 2024-02-25 19:22:02 onos_ric_secsm.py:70] MobiFlow update async coroutine started
+INFO 2024-02-25 19:22:03 onos_ric_secsm.py:113] Adding new BS: e2:1/e00_e0000
+INFO 2024-02-25 19:22:03 mobiflow_writer.py:178] [MobiFlow] Writing BS Mobiflow to DB:
+INSERT INTO bs_mobiflow
+	(msg_type, msg_id, timestamp, mobiflow_ver, generator_name, bs_id, mcc, mnc, tac, cell_id, report_period, connected_ue_cnt, idle_ue_cnt, max_ue_cnt, initial_timer, inactive_timer)
+VALUES
+	('BS', 0, 1708888923085.3403, 'v2.0', 'SECSM', 0, 0, 0, 0, 'e0000', 1000, 0, 0, 0, 1708888923008.0066, 0);
 ......
-INFO 2024-01-26 21:04:55 mobiflow_writer.py:147] [MobiFlow] Writing UE Mobiflow to DB: INSERT INTO ue_mobiflow (msg_type, msg_id, timestamp, mobiflow_ver, generator_name, bs_id, rnti, tmsi, imsi, imei, cipher_alg, integrity_alg, establish_cause, msg, rrc_state, nas_state, sec_state, emm_cause, rrc_initial_timer, rrc_inactive_timer, nas_initial_timer, nas_inactive_timer) VALUES ('UE', 0, 1706303095525.7058, 'v2.0', 'SECSM', 0, 40182, 0, 0, 0, 0, 0, 3, 'RRCSetupRequest', 0, 0, 0, 0, 0, 0, 0, 0);
-INFO 2024-01-26 21:04:55 mobiflow_writer.py:147] [MobiFlow] Writing UE Mobiflow to DB: INSERT INTO ue_mobiflow (msg_type, msg_id, timestamp, mobiflow_ver, generator_name, bs_id, rnti, tmsi, imsi, imei, cipher_alg, integrity_alg, establish_cause, msg, rrc_state, nas_state, sec_state, emm_cause, rrc_initial_timer, rrc_inactive_timer, nas_initial_timer, nas_inactive_timer) VALUES ('UE', 1, 1706303095695.7827, 'v2.0', 'SECSM', 0, 40182, 0, 0, 0, 0, 0, 3, 'RRCSetup', 2, 0, 0, 0, 1706303095525.6619, 0, 0, 0);
-INFO 2024-01-26 21:04:55 mobiflow_writer.py:162] [MobiFlow] Writing BS Mobiflow to DB: INSERT INTO bs_mobiflow (msg_type, msg_id, timestamp, mobiflow_ver, generator_name, bs_id, mcc, mnc, tac, cell_id, report_period, connected_ue_cnt, idle_ue_cnt, max_ue_cnt, initial_timer, inactive_timer) VALUES ('BS', 1, 1706303095808.877, 'v2.0', 'SECSM', 0, 0, 0, 0, 'e0000', 1000, 1, 0, 0, 1706303075078.195, 0);
-INFO 2024-01-26 21:04:56 mobiflow_writer.py:147] [MobiFlow] Writing UE Mobiflow to DB: INSERT INTO ue_mobiflow (msg_type, msg_id, timestamp, mobiflow_ver, generator_name, bs_id, rnti, tmsi, imsi, imei, cipher_alg, integrity_alg, establish_cause, msg, rrc_state, nas_state, sec_state, emm_cause, rrc_initial_timer, rrc_inactive_timer, nas_initial_timer, nas_inactive_timer) VALUES ('UE', 2, 1706303096003.0918, 'v2.0', 'SECSM', 0, 40182, 0, 0, 0, 0, 0, 3, 'RRCSetupComplete', 2, 0, 0, 0, 1706303095525.6619, 0, 0, 0);
-INFO 2024-01-26 21:04:56 mobiflow_writer.py:147] [MobiFlow] Writing UE Mobiflow to DB: INSERT INTO ue_mobiflow (msg_type, msg_id, timestamp, mobiflow_ver, generator_name, bs_id, rnti, tmsi, imsi, imei, cipher_alg, integrity_alg, establish_cause, msg, rrc_state, nas_state, sec_state, emm_cause, rrc_initial_timer, rrc_inactive_timer, nas_initial_timer, nas_inactive_timer) VALUES ('UE', 3, 1706303096133.8472, 'v2.0', 'SECSM', 0, 40182, 0, 0, 0, 0, 0, 3, 'Registrationrequest', 2, 1, 0, 0, 1706303095525.6619, 0, 1706303095525.6619, 0);
-INFO 2024-01-26 21:04:56 mobiflow_writer.py:162] [MobiFlow] Writing BS Mobiflow to DB: INSERT INTO bs_mobiflow (msg_type, msg_id, timestamp, mobiflow_ver, generator_name, bs_id, mcc, mnc, tac, cell_id, report_period, connected_ue_cnt, idle_ue_cnt, max_ue_cnt, initial_timer, inactive_timer) VALUES ('BS', 2, 1706303096233.8115, 'v2.0', 'SECSM', 0, 0, 0, 0, 'e0000', 1000, 1, 0, 0, 1706303075078.195, 0);
+INFO 2024-02-25 19:22:36 mobiflow_writer.py:171] [MobiFlow] Writing UE Mobiflow to DB:
+INSERT INTO ue_mobiflow
+	(msg_type, msg_id, timestamp, mobiflow_ver, generator_name, bs_id, rnti, tmsi, imsi, imei, cipher_alg, integrity_alg, establish_cause, msg, rrc_state, nas_state, sec_state, emm_cause, rrc_initial_timer, rrc_inactive_timer, nas_initial_timer, nas_inactive_timer)
+VALUES
+	('UE', 0, 1708888956723.8171, 'v2.0', 'SECSM', 0, 8873, 0, 0, 0, 2, 2, 3, 'RRCSetupRequest', 0, 0, 0, 0, 0, 0, 0, 0),
+	('UE', 1, 1708888956724.1287, 'v2.0', 'SECSM', 0, 8873, 0, 0, 0, 2, 2, 3, 'RRCSetup', 2, 0, 0, 0, 1708888956721.8125, 0, 0, 0),
+	('UE', 2, 1708888956725.1716, 'v2.0', 'SECSM', 0, 8873, 0, 0, 0, 2, 2, 3, 'RRCSetupComplete', 2, 0, 0, 0, 1708888956721.8125, 0, 0, 0),
+	('UE', 3, 1708888956725.2183, 'v2.0', 'SECSM', 0, 8873, 0, 0, 0, 2, 2, 3, 'Registrationrequest', 2, 1, 0, 0, 1708888956721.8125, 0, 1708888956721.8125, 0),
+	('UE', 4, 1708888956725.5933, 'v2.0', 'SECSM', 0, 8873, 0, 0, 0, 2, 2, 3, 'Authenticationrequest', 2, 1, 0, 0, 1708888956721.8125, 0, 1708888956721.8125, 0),
+	('UE', 5, 1708888956725.6362, 'v2.0', 'SECSM', 0, 8873, 0, 0, 0, 2, 2, 3, 'Authenticationresponse', 2, 1, 0, 0, 1708888956721.8125, 0, 1708888956721.8125, 0),
 ...
 ```
 
@@ -130,3 +140,4 @@ Undeploy the MobiFlow-Auditor xApp from Kubernetes
   year      = 2024
 }
 ```
+

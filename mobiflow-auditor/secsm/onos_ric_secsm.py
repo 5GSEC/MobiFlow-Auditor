@@ -52,7 +52,7 @@ fb = FactBase()
 lock = threading.Lock()
 mf_writer = None
 rpc_server = None
-rpc_thread = None
+async_queue = asyncio.Queue()
 
 def init_global(mobiflow_config: Dict[str, Any]):
     # load configs
@@ -65,6 +65,13 @@ def init_global(mobiflow_config: Dict[str, Any]):
     # Init mobiflow writer configs
     global mf_writer
     mf_writer = MobiFlowWriter(csv_file, db_path)
+
+async def update_mobiflow():
+    logging.info("MobiFlow update async coroutine started")
+    if mf_writer is not None:
+        while True:
+            await async_queue.get()
+            await mf_writer.write_mobiflow(fb)
 
 async def subscribe(
     app_config: Dict[str, Any],
@@ -117,8 +124,10 @@ async def subscribe(
         fb.add_bs(bs)
         lock.release()
 
-        if mf_writer is not None:
-            mf_writer.write_mobiflow(fb)
+        await async_queue.put(0)  # notify mobiflow writer thread
+        # if mf_writer is not None:
+        #     mf_writer.write_mobiflow(fb)
+
         action_def = E2SmKpmActionDefinition(
             ric_style_type=RicStyleType(value=report_style.type),
         )
@@ -266,8 +275,10 @@ async def subscribe(
             #logging.info(fb.get_bs(bs_id))
             #logging.info(ue)
             #logging.info("======================End SecSM Event========================")
-            if mf_writer is not None:
-                mf_writer.write_mobiflow(fb)
+
+            await async_queue.put(0)  # notify mobiflow writer thread
+            # if mf_writer is not None:
+            #     mf_writer.write_mobiflow(fb)
         # thread finish processing all records, relaese lock
         lock.release()
 
@@ -286,9 +297,7 @@ async def run(
                 app_config, e2_client, sdl_client, e2_node_id, e2_node, report_style
             )
         )
-    try:
-      await asyncio.gather(*subscriptions)
-    except asyncio.exceptions.CancelledError as e:
-      logging.error(e)
+
+    await asyncio.gather(*subscriptions)
 
 

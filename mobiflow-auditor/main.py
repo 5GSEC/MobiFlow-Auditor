@@ -29,6 +29,8 @@ async def async_main(
             except StopIteration:
                 continue
 
+            asyncio.create_task(update_mobiflow())
+
             asyncio.create_task(
                 run(
                     app_config,
@@ -62,5 +64,6 @@ if __name__ == "__main__":
     parser.add_argument("--mobiflow-config", type=str, help="mobiflow config")
     args = parser.parse_args()
     main(args)
+
 
 
