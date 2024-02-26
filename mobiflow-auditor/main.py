@@ -18,6 +18,9 @@ async def async_main(
     e2_client: sdk.E2Client,
     sdl_client: sdk.SDLClient,
 ) -> None:
+
+    asyncio.create_task(update_mobiflow())
+
     async with e2_client, sdl_client:
         async for e2_node_id, e2_node in sdl_client.watch_e2_connections():
             try:
@@ -28,8 +31,6 @@ async def async_main(
                 )
             except StopIteration:
                 continue
-
-            asyncio.create_task(update_mobiflow())
 
             asyncio.create_task(
                 run(
@@ -64,6 +65,5 @@ if __name__ == "__main__":
     parser.add_argument("--mobiflow-config", type=str, help="mobiflow config")
     args = parser.parse_args()
     main(args)
-
 
 
