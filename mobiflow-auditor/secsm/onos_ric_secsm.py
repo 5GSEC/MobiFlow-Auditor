@@ -4,8 +4,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import asyncio
-import logging
 import threading
 from typing import Any, Dict
 
@@ -42,7 +40,6 @@ from onos_e2_sm.e2smkpmv2.v2 import (
 
 from .metrics import CUSTOM_COLLECTOR
 from .mobiflow.encoding import *
-from .mobiflow.factbase import *
 from .mobiflow.mobiflow_writer import *
 
 KPM_SERVICE_MODEL_OID_V2 = "1.3.6.1.4.1.53148.1.2.2.2"
@@ -165,7 +162,7 @@ async def subscribe(
         e2_node_id=e2_node_id,
         service_model_name="oran-e2sm-kpm",
         service_model_version="v2",
-        subscription_id=f"fb-kpimon_oran-e2sm-kpm_sub_{e2_node_id}",
+        subscription_id=f"oran-e2sm-secsm_sub_{e2_node_id}",
         trigger=bytes(trigger_def),
         actions=actions,
     ):
@@ -295,5 +292,4 @@ async def run(
         )
 
     await asyncio.gather(*subscriptions)
-
 

@@ -17,7 +17,7 @@ class CustomCollector:
         if measurement_id in self.metrics or measurement_name in self.metrics:
             return
 
-        metric_name = "fb_xappkpimon_" + measurement_name.lower().replace(".", "_")
+        metric_name = measurement_name.lower().replace(".", "_")
         metric = GaugeMetricFamily(
             metric_name,
             measurement_name,  # description
