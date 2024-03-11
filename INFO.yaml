@@ -1,0 +1,35 @@
+---
+project: 'mobiflow_auditor'
+project_creation_date: '2024-3-2'
+project_category: ''
+lifecycle_state: 'Incubation'
+project_lead: &oran_ric_app_se_ran
+    name: 'SE-RAN'
+    email: 'team@5gsec.com'
+    id: 'SE-RAN'
+    company: 'Security-Enhanced Radio Access Network'
+    timezone: 'America/New_York'
+primary_contact: *oran_ric_app_se_ran
+issue_tracking:
+    type: 'Github'
+    url: 'https://github.com/5GSEC/MobiFlow-Auditor/issues'
+    key: 'MobiFlow-Auditor'
+mailing_list:
+    type: 'groups.io'
+    url: 'https://lists.o-ran-sc.org/g/main'
+    tag: '[]'
+repositories:
+    - 5GSEC/MobiFlow-Auditor 
+committers:
+    - <<: *oran_ric_app_se_ran
+    - name: 'Haohuang Wen'
+      email: 'wen.423@osu.edu'
+      company: 'The Ohio State University'
+      id: 'onehouwong'
+      timezone: 'America/New_York'
+    # - name: 'Naman Gupta'
+    #   email: 'naman.gupta@samsung.com'
+    #   company: 'Samsung'
+    #   id: 'naman.gupta'
+    #   timezone: 'Asia/Kolkata'
+
