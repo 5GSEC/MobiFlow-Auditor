@@ -23,20 +23,21 @@ class KpmIndicationHandler(_BaseHandler):
                 sbuf: str (required)
                     length of the message
         """
-        print(f"KpmIndicationHandler.request_handler:: Handler processing request {summary[rmr.RMR_MS_PAYLOAD]} {sbuf}")
-        try:
-            req = json.loads(summary[rmr.RMR_MS_PAYLOAD])  # input should be a json encoded as bytes
-            self.logger.info("KpmIndicationHandler.request_handler:: Handler processing request")
-        except (json.decoder.JSONDecodeError, KeyError):
-            self.logger.error("KpmIndicationHandler.request_handler:: Handler failed to parse request")
-            return
+        binary_payload = summary[rmr.RMR_MS_PAYLOAD]
+        print(f"KpmIndicationHandler.request_handler:: Handler processing request {binary_payload}")
+        # try:
+        #     req = json.loads(summary[rmr.RMR_MS_PAYLOAD])  # input should be a json encoded as bytes
+        #     self.logger.info("KpmIndicationHandler.request_handler:: Handler processing request")
+        # except (json.decoder.JSONDecodeError, KeyError):
+        #     self.logger.error("KpmIndicationHandler.request_handler:: Handler failed to parse request")
+        #     return
 
-        if self.verify_indication(req):
-            self.logger.info("KpmIndicationHandler.request_handler:: Handler processed request: {}".format(req))
-        else:
-            self.logger.error("KpmIndicationHandler.request_handler:: Request verification failed: {}".format(req))
-            return
-        self.logger.debug("KpmIndicationHandler.request_handler:: Request verification success: {}".format(req))
+        # if self.verify_indication(req):
+        #     self.logger.info("KpmIndicationHandler.request_handler:: Handler processed request: {}".format(req))
+        # else:
+        #     self.logger.error("KpmIndicationHandler.request_handler:: Request verification failed: {}".format(req))
+        #     return
+        # self.logger.debug("KpmIndicationHandler.request_handler:: Request verification success: {}".format(req))
 
         self._rmr_xapp.rmr_free(sbuf)
 
