@@ -36,7 +36,7 @@ class HWXapp:
     __XAPP_HTTP_END_POINT = "service-%s-%s-http.%s:%d" % (__XAPP_NAME_SPACE, __XAPP_NAME, __XAPP_NAME_SPACE, __HTTP_PORT)
     __XAPP_RMR_END_POINT = "service-%s-%s-rmr.%s:%d" % (__XAPP_NAME_SPACE, __XAPP_NAME, __XAPP_NAME_SPACE, __RMR_PORT)
     __CONFIG_PATH = "/ric/v1/config"
-    __ASN_WRAPPER_PATH = "./asn1/wrapper"
+    __ASN_WRAPPER_PATH = "/tmp/src/asn1/wrapper"
 
     def __init__(self):
         fake_sdl = getenv("USE_FAKE_SDL", False)
@@ -175,4 +175,5 @@ class HWXapp:
         TODO: could we register a signal handler for Docker SIGTERM that calls this?
         """
         self._rmr_xapp.stop()
+
 

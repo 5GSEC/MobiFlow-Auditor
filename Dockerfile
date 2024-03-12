@@ -35,7 +35,7 @@ COPY LICENSE.txt /tmp/
 COPY src/ /tmp/src
 COPY init/ /tmp/init
 # compile ASN C wrapper
-RUN cd /tmp/src/asn1 && ./asn1_compile.sh
+RUN cd /tmp/src/asn1 && ./wrapper_compile.sh
 RUN pip install /tmp
 
 # Env - TODO- Configmap
@@ -48,4 +48,5 @@ ENV DBAAS_SERVICE_HOST=service-ricplt-dbaas-tcp.ricplt.svc.cluster.local
 
 #Run
 CMD run-xapp.py
+
 

@@ -21,7 +21,6 @@ from .SdlAlarmManager import SdlAlarmManager
 from .SdlManager import SdlManager
 from .SubscriptionManager import SubscriptionManager
 from .MetricManager import MetricManager
-from .E2Manager import E2Manager
-from .onos_e2_sm import e2sm_kpm_v2
+
 
 
