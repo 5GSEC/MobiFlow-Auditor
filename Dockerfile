@@ -34,6 +34,8 @@ COPY README.md /tmp
 COPY LICENSE.txt /tmp/
 COPY src/ /tmp/src
 COPY init/ /tmp/init
+# compile ASN C wrapper
+RUN cd /tmp/src/asn1 && ./asn1_compile.sh
 RUN pip install /tmp
 
 # Env - TODO- Configmap

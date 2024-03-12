@@ -21,6 +21,7 @@ from ricxappframe.xapp_frame import RMRXapp, rmr
 from .utils.constants import Constants
 from .manager import *
 from .handler import *
+from .asn1 import OnosAsnProxy
 from mdclogpy import Level
 
 class HWXapp:
@@ -35,9 +36,11 @@ class HWXapp:
     __XAPP_HTTP_END_POINT = "service-%s-%s-http.%s:%d" % (__XAPP_NAME_SPACE, __XAPP_NAME, __XAPP_NAME_SPACE, __HTTP_PORT)
     __XAPP_RMR_END_POINT = "service-%s-%s-rmr.%s:%d" % (__XAPP_NAME_SPACE, __XAPP_NAME, __XAPP_NAME_SPACE, __RMR_PORT)
     __CONFIG_PATH = "/ric/v1/config"
+    __ASN_WRAPPER_PATH = "./asn1/wrapper"
 
     def __init__(self):
         fake_sdl = getenv("USE_FAKE_SDL", False)
+        self.asn_proxy = OnosAsnProxy(self.__ASN_WRAPPER_PATH)
         self._rmr_xapp = RMRXapp(self._default_handler,
                                  config_handler=self._handle_config_change,
                                  rmr_port=self.__RMR_PORT,
@@ -51,8 +54,7 @@ class HWXapp:
         rmr_xapp.logger.set_level(Level.DEBUG)
         rmr_xapp.logger.info("HWXapp.post_init :: post_init called")
         sdl_mgr = SdlManager(rmr_xapp)
-        sub_mgr = SubscriptionManager(rmr_xapp)
-        e2_mgr = E2Manager(rmr_xapp)
+        sub_mgr = SubscriptionManager(rmr_xapp, self.asn_proxy)
         # self.sdl_alarm_mgr = SdlAlarmManager()
         # a1_mgr = A1PolicyManager(rmr_xapp)
         # a1_mgr.startup()
@@ -82,7 +84,8 @@ class HWXapp:
                 if rf_oid in TARGET_OID_LIST:
                     print(f"Found target ran function for gNB {inventory_name}: {ran_func}")
 
-                    # decoded_rf_def = e2_mgr.decode_ran_function_description_hex_str(rf_def)
+                    decoded_rf_def = self.asn_proxy.decode_e2sm_kpm_ran_function_definition(rf_def)
+                    print(f"Decode RAN function def:\n {decoded_rf_def}")
 
                     # subscribe_nb_list.append(gnb_nb_identity)
                     # break
@@ -155,7 +158,7 @@ class HWXapp:
         HealthCheckHandler(self._rmr_xapp, Constants.RIC_HEALTH_CHECK_REQ)
         A1PolicyHandler(self._rmr_xapp, Constants.A1_POLICY_REQ)
         SubscriptionHandler(self._rmr_xapp, Constants.SUBSCRIPTION_REQ)
-        KpmIndicationHandler(self._rmr_xapp, Constants.INDICATION_REQ)
+        KpmIndicationHandler(self._rmr_xapp, Constants.INDICATION_REQ, self.asn_proxy)
 
     def start(self, thread=False):
         """

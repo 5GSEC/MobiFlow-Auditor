@@ -27,6 +27,7 @@ import socketserver
 from ricxappframe.xapp_frame import RMRXapp
 from ricxappframe.entities.rnib.nb_identity_pb2 import NbIdentity
 from ..utils.constants import Constants
+from ..asn1 import AsnProxy
 from ._BaseManager import _BaseManager
 from mdclogpy import Level
 
@@ -37,8 +38,9 @@ class SubscriptionManager(_BaseManager):
     __SUBSCRIPTION_URL = "http://service-ricplt-submgr-http.ricplt:8088/ric/v1/subscriptions/"
     __CLIENT_END_POINT = "service-ricxapp-mobiflow-auditor-http.ricxapp"
 
-    def __init__(self, rmr_xapp: RMRXapp, local_address="0.0.0.0", http_port=8080, rmr_port=4560) -> None:
+    def __init__(self, rmr_xapp: RMRXapp, asn_proxy: AsnProxy, local_address="0.0.0.0", http_port=8080, rmr_port=4560) -> None:
         super().__init__(rmr_xapp)
+        self.asn_proxy = asn_proxy
         self.gnb_list = []
         self.enb_list = []
         self.logger.set_level(Level.INFO)
