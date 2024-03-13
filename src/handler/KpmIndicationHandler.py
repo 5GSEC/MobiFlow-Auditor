@@ -29,7 +29,7 @@ class KpmIndicationHandler(_BaseHandler):
                     length of the message
         """
         binary_payload = summary[rmr.RMR_MS_PAYLOAD]
-        me_id = summary[rmr.RMR_MS_MEID]
+        me_id = str(summary[rmr.RMR_MS_MEID], "utf-8")
         # print(f"KpmIndicationHandler.request_handler:: Handler processing request {binary_payload}")
         # start decoding
         e2ap_hex_payload = str(binascii.hexlify(binary_payload), "utf-8")
@@ -80,11 +80,11 @@ class KpmIndicationHandler(_BaseHandler):
         self._rmr_xapp.rmr_free(sbuf)
 
     def update_fact_base(self, kpm_measurement_dict: dict, me_id: str):
-        if kpm_measurement_dict["UE.RNTI"] == 0:
+        if int(kpm_measurement_dict["UE.RNTI"]) == 0:
             return  # ignore empty indication records
 
-        # update fact base
         self.logger.info(f"KPM indication reported metrics: {kpm_measurement_dict}")
+        # update fact base
         fb = FactBase()
         ue = UE()
         ue.rnti = int(kpm_measurement_dict["UE.RNTI"])
@@ -123,4 +123,5 @@ class KpmIndicationHandler(_BaseHandler):
     def verify_indication(self, req: dict):
         # TODO
         return True
+
 

@@ -1,16 +1,16 @@
 import threading
 from .mobiflow import *
-from .mobiflow_writer import MobiFlowWriter
 
 class FactBase:
+
+    _instance = None
+    _lock = threading.Lock()
+
     def __init__(self):
         if not hasattr(self, 'initialized'):
             self.facts = {}
             self.bs_id_counter = 0
             self.bs_name_map = {}
-            self.mobiflow_writer = MobiFlowWriter()
-            self._instance = None
-            self._lock = threading.Lock
             self.initialized = True
 
     def __new__(cls, *args, **kwargs):
@@ -21,8 +21,26 @@ class FactBase:
         return cls._instance
 
     def update_mobiflow(self):
-        if self.mobiflow_writer is not None:
-            self.mobiflow_writer.write_mobiflow(self._instance)
+        while True:
+            write_should_end = True
+            for ue in self.get_all_ue():
+                if ue.should_report:
+                    write_should_end = False
+                    # generate UE mobiflow record
+                    umf, prev_rrc, prev_nas, prev_sec, rrc, nas, sec = ue.generate_mobiflow()
+                    print("[MobiFlow] Writing UE Mobiflow: " + umf.__str__())
+                    # update BS
+                    bs = self.get_bs(umf.bs_id)
+                    if bs is not None:
+                        bs.update_counters(prev_rrc, prev_nas, prev_sec, rrc, nas, sec)
+            for bs in self.get_all_bs():
+                if bs.should_report:
+                    write_should_end = False
+                    # generate BS mobiflow record
+                    bmf = bs.generate_mobiflow()
+                    print("[MobiFlow] Writing BS Mobiflow: " + bmf.__str__())
+            if write_should_end:  # end writing if no mobiflow record to update
+                break
 
     def add_bs(self, bs: BS):
         with self._lock:
@@ -94,4 +112,5 @@ class FactBase:
                 self.facts[bsId].ue.remove(ue_to_remove)
                 return True
         return False
+
 

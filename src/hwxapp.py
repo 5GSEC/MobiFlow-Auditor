@@ -15,6 +15,8 @@
 #   limitations under the License.
 #
 # ==================================================================================
+import time
+
 import requests
 from os import getenv
 from ricxappframe.xapp_frame import RMRXapp, rmr
@@ -52,7 +54,7 @@ class HWXapp:
         """
         Function that runs when xapp initialization is complete
         """
-        rmr_xapp.logger.set_level(Level.DEBUG)
+        rmr_xapp.logger.set_level(Level.INFO)
         rmr_xapp.logger.info("HWXapp.post_init :: post_init called")
         sdl_mgr = SdlManager(rmr_xapp)
         sub_mgr = SubscriptionManager(rmr_xapp, self.asn_proxy)
@@ -69,7 +71,7 @@ class HWXapp:
         # create and init fact base
         fb = FactBase()
 
-        # obtain nodeb list
+        # obtain nodeb list for subscription
         enb_list = sdl_mgr.get_enb_list()
         subscribe_nb_list = []
         for enb_nb_identity in enb_list:
@@ -86,18 +88,20 @@ class HWXapp:
                 rf_def = ran_func["ranFunctionDefinition"]
                 rf_oid = ran_func["ranFunctionOid"]
                 if rf_oid in TARGET_OID_LIST:
-                    print(f"Found target ran function for gNB {inventory_name}: {ran_func}")
+                    rmr_xapp.logger.debug(f"Found target ran function for gNB {inventory_name}: {ran_func}")
 
                     decoded_rf_def = self.asn_proxy.decode_e2sm_kpm_ran_function_definition(rf_def)
-                    print(f"Decode RAN function def:\n {decoded_rf_def}")
+                    rmr_xapp.logger.debug(f"Decode RAN function def:\n {decoded_rf_def}")
 
                     # subscribe_nb_list.append(gnb_nb_identity)
                     # break
 
                     # Subscribe to NodeB
-                    print(f"connection status {connection_status}")
+                    rmr_xapp.logger.debug(f"connection status {connection_status}")
                     if connection_status == 1:
                         sub_mgr.send_subscription_request(gnb_nb_identity, rf_id)
+
+        # TODO: keep polling node b list but do not block this function
 
     def _register(self, rmr_xapp):
         # Register xApp to the App mgr
@@ -179,5 +183,6 @@ class HWXapp:
         TODO: could we register a signal handler for Docker SIGTERM that calls this?
         """
         self._rmr_xapp.stop()
+
 
 

@@ -77,6 +77,8 @@ class SubscriptionManager(_BaseManager):
 
     def send_subscription_request(self, nb_identity: NbIdentity, ran_function_id: int):
         me_id = nb_identity.inventory_name
+        if me_id in self.subscription_list.keys():
+            return  # subscription already exist
         subscription_params = {"ClientEndPoint": {"Host": self.__CLIENT_END_POINT,
                                                   "HTTPPort": self.client_http_port,
                                                   "RMRPort": self.client_rmr_port
@@ -108,7 +110,7 @@ class SubscriptionManager(_BaseManager):
                 resp = json.loads(response.text)
                 if "SubscriptionId" in resp.keys():
                     # save subscription info
-                    self.subscription_list[resp["SubscriptionId"]] = me_id
+                    self.subscription_list[me_id] = resp["SubscriptionId"]
                     # add base station Info
                     bs = BS()
                     fb = FactBase()
@@ -184,4 +186,5 @@ class SubscriptionManager(_BaseManager):
         action_def_hex = "000600000131001D003055452E524E5449003855452E494D534931003855452E494D534932002855452E524154004055452E4D5F544D5349006055452E4349504845525F414C47007855452E494E544547524954595F414C47005855452E454D4D5F4341555345007855452E52454C454153455F54494D4552008855452E45535441424C4953485F434155534500186D73673100186D73673200186D73673300186D73673400186D73673500186D73673600186D73673700186D73673800186D73673900206D7367313000206D7367313100206D7367313200206D7367313300206D7367313400206D7367313500206D7367313600206D7367313700206D7367313800206D7367313900206D736732304003E70000"
         action_def_encoded = [int(action_def_hex[i:i + 2], 16) for i in range(0, len(action_def_hex), 2)]
         return action_def_encoded
+
 
