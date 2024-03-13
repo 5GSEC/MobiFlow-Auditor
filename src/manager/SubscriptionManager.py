@@ -125,7 +125,6 @@ class SubscriptionManager(_BaseManager):
                     fb.add_bs(bs)
                     mf_list = fb.update_mobiflow()
                     # test
-                    self.logger.info(f"[Test] Before: SDL keys: {self.sdl_mgr.get_sdl_keys(Constants.bs_mobiflow_ns)}")
                     for mf in mf_list:
                         # store Mobiflow to SDL
                         self.sdl_mgr.store_data_to_sdl(Constants.bs_mobiflow_ns, str(mf.msg_id), mf.__str__())
