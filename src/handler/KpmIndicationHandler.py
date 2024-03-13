@@ -122,16 +122,14 @@ class KpmIndicationHandler(_BaseHandler):
 
         fb.add_ue(fb.get_bs_index_by_name(me_id), ue)
         mf_list = fb.update_mobiflow()
-        self.logger.info(f"[Test] Before: SDL keys: {self.sdl_mgr.get_sdl_keys(Constants.ue_mobiflow_ns)}")
         for mf in mf_list:
             # store Mobiflow to SDL
             self.logger.info(f"[MobiFlow] Storing MobiFlow record to SDL {mf.__str__()}")
-            self.sdl_mgr.store_data_to_sdl(Constants.bs_mobiflow_ns, mf.msg_id, mf.__str__())
-
-        self.logger.info(f"[Test] After: SDL keys: {self.sdl_mgr.get_sdl_keys(Constants.ue_mobiflow_ns)}")
+            self.sdl_mgr.store_data_to_sdl(Constants.ue_mobiflow_ns, str(mf.msg_id), mf.__str__())
 
     def verify_indication(self, req: dict):
         # TODO
         return True
+
 
 

@@ -17,4 +17,4 @@
 # ==================================================================================
 
 from .utils import find_all_values
-from constants import Constants
+from .constants import Constants
