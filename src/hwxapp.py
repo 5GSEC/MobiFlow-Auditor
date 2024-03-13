@@ -22,6 +22,7 @@ from .utils.constants import Constants
 from .manager import *
 from .handler import *
 from .asn1 import OnosAsnProxy
+from .mobiflow import FactBase
 from mdclogpy import Level
 
 class HWXapp:
@@ -64,6 +65,9 @@ class HWXapp:
         self._register(rmr_xapp)
 
         TARGET_OID_LIST = ["1.3.6.1.4.1.53148.1.2.2.2"]
+
+        # create and init fact base
+        fb = FactBase()
 
         # obtain nodeb list
         enb_list = sdl_mgr.get_enb_list()

@@ -29,6 +29,7 @@ from ricxappframe.entities.rnib.nb_identity_pb2 import NbIdentity
 from ..utils.constants import Constants
 from ..asn1 import AsnProxy
 from ._BaseManager import _BaseManager
+from ..mobiflow import FactBase, BS
 from mdclogpy import Level
 
 
@@ -38,7 +39,8 @@ class SubscriptionManager(_BaseManager):
     __SUBSCRIPTION_URL = "http://service-ricplt-submgr-http.ricplt:8088/ric/v1/subscriptions/"
     __CLIENT_END_POINT = "service-ricxapp-mobiflow-auditor-http.ricxapp"
 
-    def __init__(self, rmr_xapp: RMRXapp, asn_proxy: AsnProxy, local_address="0.0.0.0", http_port=8080, rmr_port=4560) -> None:
+    def __init__(self, rmr_xapp: RMRXapp, asn_proxy: AsnProxy, local_address="0.0.0.0", http_port=8080, rmr_port=4560,
+                 report_period=1000) -> None:
         super().__init__(rmr_xapp)
         self.asn_proxy = asn_proxy
         self.gnb_list = []
@@ -48,6 +50,7 @@ class SubscriptionManager(_BaseManager):
         self.local_address = local_address
         self.client_http_port = http_port
         self.client_rmr_port = rmr_port
+        self.report_period = report_period
         # subscription response
         self.subscription_resp_handler = None
         self.responseCB = None
@@ -86,7 +89,7 @@ class SubscriptionManager(_BaseManager):
                                    "RMRRoutingNeeded": True
                                 },
                                "SubscriptionDetails": [{"XappEventInstanceID": 1,  # ??
-                                                        "EventTriggers": [0x08, 0x03, 0xe7], # 0x3e7 -> 1000
+                                                        "EventTriggers": self.encode_report_period(),
                                                         "ActionToBeSetupList": [
                                                             {"ActionID": 0,
                                                              "ActionType": "report",
@@ -103,9 +106,20 @@ class SubscriptionManager(_BaseManager):
             self.logger.info(f"Subscription response {response.status_code} {response.text}")
             if response.status_code == 201:  # subscription request success
                 resp = json.loads(response.text)
-                # save subscription info
                 if "SubscriptionId" in resp.keys():
+                    # save subscription info
                     self.subscription_list[resp["SubscriptionId"]] = me_id
+                    # add base station Info
+                    bs = BS()
+                    fb = FactBase()
+                    bs.name = me_id # gnb_208_099_00000e00
+                    bs.bs_id = -1  # new BS
+                    bs.mcc = me_id.split("_")[1]
+                    bs.mnc = me_id.split("_")[2]
+                    bs.cell_id = me_id.split("_")[3]
+                    bs.report_period = self.report_period
+                    fb.add_bs(bs)
+                    fb.update_mobiflow()
                     return None
 
         except requests.exceptions.HTTPError as err_h:
@@ -160,6 +174,10 @@ class SubscriptionManager(_BaseManager):
             return True
         else:
             return False
+
+    def encode_report_period(self) -> list:
+        # [0x08, 0x03, 0xe7],  # 0x3e7 -> 1000
+        return [0x08, (self.report_period-1) // 256, (self.report_period-1) % 256]
 
     def encode_action_definition(self):
         # hack for now until we find ways to encode / decode ASN1, this action def is dedicated for mobiflow kpm

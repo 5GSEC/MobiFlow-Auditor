@@ -5,6 +5,7 @@ from mdclogpy import Level
 from ._BaseHandler import _BaseHandler
 from ..asn1 import AsnProxy
 from ..utils.utils import find_all_values
+from ..mobiflow import FactBase, UE, decode_rrc_msg, decode_nas_msg
 
 class KpmIndicationHandler(_BaseHandler):
 
@@ -28,6 +29,7 @@ class KpmIndicationHandler(_BaseHandler):
                     length of the message
         """
         binary_payload = summary[rmr.RMR_MS_PAYLOAD]
+        me_id = summary[rmr.RMR_MS_MEID]
         # print(f"KpmIndicationHandler.request_handler:: Handler processing request {binary_payload}")
         # start decoding
         e2ap_hex_payload = str(binascii.hexlify(binary_payload), "utf-8")
@@ -59,7 +61,7 @@ class KpmIndicationHandler(_BaseHandler):
         for i in range(len(kpm_measurement_values)):
             kpm_measurement_dict[kpm_measurement_names[i]] = kpm_measurement_values[i]
 
-        self.logger.info(f"KPM indication reported metrics: {kpm_measurement_dict}")
+        self.update_fact_base(kpm_measurement_dict, me_id)
 
         # try:
         #     req = json.loads(summary[rmr.RMR_MS_PAYLOAD])  # input should be a json encoded as bytes
@@ -76,6 +78,47 @@ class KpmIndicationHandler(_BaseHandler):
         # self.logger.debug("KpmIndicationHandler.request_handler:: Request verification success: {}".format(req))
 
         self._rmr_xapp.rmr_free(sbuf)
+
+    def update_fact_base(self, kpm_measurement_dict: dict, me_id: str):
+        if kpm_measurement_dict["UE.RNTI"] == 0:
+            return  # ignore empty indication records
+
+        # update fact base
+        self.logger.info(f"KPM indication reported metrics: {kpm_measurement_dict}")
+        fb = FactBase()
+        ue = UE()
+        ue.rnti = int(kpm_measurement_dict["UE.RNTI"])
+        ue.imsi = int(kpm_measurement_dict["UE.IMSI1"]) + (int(kpm_measurement_dict["UE.IMSI2"]) << 32)
+        ue.tmsi = int(kpm_measurement_dict["UE.M_TMSI"])
+        ue.rat = int(kpm_measurement_dict["UE.RAT"])
+        ue.cipher_alg = int(kpm_measurement_dict["UE.CIPHER_ALG"])
+        ue.integrity_alg = int(kpm_measurement_dict["UE.INTEGRITY_ALG"])
+        ue.emm_cause = int(kpm_measurement_dict["UE.EMM_CAUSE"])
+        msg_len = 20
+        for i in range(1, msg_len+1):
+            msg_val = int(kpm_measurement_dict[f"msg{i}"])
+            if msg_val & 1 == 1:
+                # RRC
+                dcch = (msg_val >> 1) & 1
+                downlink = (msg_val >> 2) & 1
+                msg_id = (msg_val >> 3)
+                msg_name = decode_rrc_msg(dcch, downlink, msg_id, ue.rat)
+                if msg_name != "" and msg_name is not None:
+                    ue.msg_trace.append(msg_name)
+                elif msg_id != 0:
+                    self.logger.error(f"Invalid RRC Msg dcch={dcch}, downlink={downlink} {msg_id}")
+            else:
+                # NAS
+                dis = (msg_val >> 1) & 1
+                msg_id = (msg_val >> 2)
+                msg_name = decode_nas_msg(dis, msg_id, ue.rat)
+                if msg_name != "" and msg_name is not None:
+                    ue.msg_trace.append(msg_name)
+                elif msg_id != 0:
+                    self.logger.error(f"Invalid NAS Msg: discriminator={dis} {msg_id}")
+
+        fb.add_ue(fb.get_bs_index_by_name(me_id), ue)
+        fb.update_mobiflow()
 
     def verify_indication(self, req: dict):
         # TODO
