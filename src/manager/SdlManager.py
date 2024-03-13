@@ -27,18 +27,18 @@ from mdclogpy import Level
 
 class SdlManager(_BaseManager):
 
-    __namespace = "e2Manager"
-    __endpoint = "http://service-ricplt-e2mgr-http.ricplt.svc.cluster.local:3800/v1/nodeb/"
+    __E2_namespace = "e2Manager"
+    __E2_msgr_endpoint = "http://service-ricplt-e2mgr-http.ricplt.svc.cluster.local:3800/v1/nodeb/"
 
     def __init__(self, rmr_xapp: RMRXapp) -> None:
         super().__init__(rmr_xapp)
         self.logger.set_level(Level.INFO)
 
-    def get_sdl_keys(self) -> List:
-        return self._rmr_xapp.sdl.find_keys(self.__namespace, "")
+    def get_sdl_keys(self, ns) -> List:
+        return self._rmr_xapp.sdl.find_keys(ns, "")
 
-    def get_sdl_with_key(self, ns):
-        return self._rmr_xapp.sdl_find_and_get(self.__namespace, ns, usemsgpack=False)
+    def get_sdl_with_key(self, ns, key):
+        return self._rmr_xapp.sdl_find_and_get(ns, key, usemsgpack=False)
 
     def get_gnb_list(self) -> List[NbIdentity]:
         return self._rmr_xapp.get_list_gnb_ids()
@@ -47,7 +47,7 @@ class SdlManager(_BaseManager):
         return self._rmr_xapp.get_list_enb_ids()
 
     def get_nodeb_info_by_inventory_name(self, inventory_name) -> Dict:
-        url = self.__endpoint + inventory_name
+        url = self.__E2_msgr_endpoint + inventory_name
         response = requests.get(url)
         if response.status_code == 200:
             return json.loads(response.text)
@@ -55,15 +55,6 @@ class SdlManager(_BaseManager):
             self.logger.error('SdlManager [get_nodeb_info_by_id] Error:', response.status_code)
             return dict()
 
-    # def sdlGetGnbList(self):
-    #     gnblist = self._rmr_xapp.sdl_find_and_get(self.__namespace, "GNB")
-    #     self.logger.info("SdlManager.sdlGetGnbList:: Processed request: {}".format(json.dumps(gnblist)))
-    #
-    # def sdlGetEnbList(self):
-    #     enblist = self._rmr_xapp.sdl_find_and_get(self.__namespace, "ENB")
-    #     self.logger.info("SdlManager.sdlGetGnbList:: Handler processed request: {}".format(json.dumps(enblist)))
-
-
-
-
+    def store_data_to_sdl(self, ns: str, key: str, value):
+        self._rmr_xapp.sdl.set(ns, key, value)
 

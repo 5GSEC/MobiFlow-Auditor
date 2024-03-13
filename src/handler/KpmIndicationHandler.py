@@ -1,18 +1,21 @@
 import json
 import binascii
-from ricxappframe.xapp_frame import RMRXapp, rmr
 from mdclogpy import Level
-from ._BaseHandler import _BaseHandler
+from ricxappframe.xapp_frame import RMRXapp, rmr
 from ..asn1 import AsnProxy
+from ..utils import Constants
+from ..manager import SdlManager
+from ._BaseHandler import _BaseHandler
 from ..utils.utils import find_all_values
 from ..mobiflow import FactBase, UE, decode_rrc_msg, decode_nas_msg
 
 class KpmIndicationHandler(_BaseHandler):
 
-    def __init__(self, rmr_xapp: RMRXapp, msgtype, asn_proxy: AsnProxy):
+    def __init__(self, rmr_xapp: RMRXapp, msgtype, asn_proxy: AsnProxy, sdl_mgr: SdlManager):
         super().__init__(rmr_xapp, msgtype)
         self.logger.set_level(Level.INFO)
         self.asn_proxy = asn_proxy
+        self.sdl_mgr = sdl_mgr
 
     def request_handler(self, rmr_xapp, summary, sbuf):
         """
@@ -118,7 +121,14 @@ class KpmIndicationHandler(_BaseHandler):
                     self.logger.error(f"Invalid NAS Msg: discriminator={dis} {msg_id}")
 
         fb.add_ue(fb.get_bs_index_by_name(me_id), ue)
-        fb.update_mobiflow()
+        mf_list = fb.update_mobiflow()
+        self.logger.info(f"[Test] Before: SDL keys: {self.sdl_mgr.get_sdl_keys(Constants.ue_mobiflow_ns)}")
+        for mf in mf_list:
+            # store Mobiflow to SDL
+            self.logger.info(f"[MobiFlow] Storing MobiFlow record to SDL {mf.__str__()}")
+            self.sdl_mgr.store_data_to_sdl(Constants.bs_mobiflow_ns, mf.msg_id, mf.__str__())
+
+        self.logger.info(f"[Test] After: SDL keys: {self.sdl_mgr.get_sdl_keys(Constants.ue_mobiflow_ns)}")
 
     def verify_indication(self, req: dict):
         # TODO

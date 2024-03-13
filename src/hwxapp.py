@@ -56,8 +56,8 @@ class HWXapp:
         """
         rmr_xapp.logger.set_level(Level.INFO)
         rmr_xapp.logger.info("HWXapp.post_init :: post_init called")
-        sdl_mgr = SdlManager(rmr_xapp)
-        sub_mgr = SubscriptionManager(rmr_xapp, self.asn_proxy)
+        self.sdl_mgr = SdlManager(rmr_xapp)
+        self.sub_mgr = SubscriptionManager(rmr_xapp, self.asn_proxy, self.sdl_mgr)
         # self.sdl_alarm_mgr = SdlAlarmManager()
         # a1_mgr = A1PolicyManager(rmr_xapp)
         # a1_mgr.startup()
@@ -72,17 +72,17 @@ class HWXapp:
         fb = FactBase()
 
         # obtain nodeb list for subscription
-        enb_list = sdl_mgr.get_enb_list()
+        enb_list = self.sdl_mgr.get_enb_list()
         subscribe_nb_list = []
         for enb_nb_identity in enb_list:
             inventory_name = enb_nb_identity.inventory_name
-            nodeb_info_json = sdl_mgr.get_nodeb_info_by_inventory_name(inventory_name)
+            nodeb_info_json = self.sdl_mgr.get_nodeb_info_by_inventory_name(inventory_name)
 
-        gnb_list = sdl_mgr.get_gnb_list()
+        gnb_list = self.sdl_mgr.get_gnb_list()
         for gnb_nb_identity in gnb_list:
             inventory_name = gnb_nb_identity.inventory_name
             connection_status = gnb_nb_identity.connection_status
-            nodeb_info_json = sdl_mgr.get_nodeb_info_by_inventory_name(inventory_name)
+            nodeb_info_json = self.sdl_mgr.get_nodeb_info_by_inventory_name(inventory_name)
             for ran_func in nodeb_info_json["gnb"]["ranFunctions"]:
                 rf_id = ran_func["ranFunctionId"]
                 rf_def = ran_func["ranFunctionDefinition"]
@@ -99,7 +99,7 @@ class HWXapp:
                     # Subscribe to NodeB
                     rmr_xapp.logger.debug(f"connection status {connection_status}")
                     if connection_status == 1:
-                        sub_mgr.send_subscription_request(gnb_nb_identity, rf_id)
+                        self.sub_mgr.send_subscription_request(gnb_nb_identity, rf_id)
 
         # TODO: keep polling node b list but do not block this function
 
@@ -166,7 +166,7 @@ class HWXapp:
         HealthCheckHandler(self._rmr_xapp, Constants.RIC_HEALTH_CHECK_REQ)
         A1PolicyHandler(self._rmr_xapp, Constants.A1_POLICY_REQ)
         SubscriptionHandler(self._rmr_xapp, Constants.SUBSCRIPTION_REQ)
-        KpmIndicationHandler(self._rmr_xapp, Constants.INDICATION_REQ, self.asn_proxy)
+        KpmIndicationHandler(self._rmr_xapp, Constants.INDICATION_REQ, self.asn_proxy, self.sdl_mgr)
 
     def start(self, thread=False):
         """

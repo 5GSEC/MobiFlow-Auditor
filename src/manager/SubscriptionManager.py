@@ -26,10 +26,11 @@ import http.server
 import socketserver
 from ricxappframe.xapp_frame import RMRXapp
 from ricxappframe.entities.rnib.nb_identity_pb2 import NbIdentity
-from ..utils.constants import Constants
+from ..manager import SdlManager
 from ..asn1 import AsnProxy
 from ._BaseManager import _BaseManager
-from ..mobiflow import FactBase, BS
+from ..mobiflow import FactBase, BS, BSMobiFlow
+from ..utils import Constants
 from mdclogpy import Level
 
 
@@ -39,10 +40,11 @@ class SubscriptionManager(_BaseManager):
     __SUBSCRIPTION_URL = "http://service-ricplt-submgr-http.ricplt:8088/ric/v1/subscriptions/"
     __CLIENT_END_POINT = "service-ricxapp-mobiflow-auditor-http.ricxapp"
 
-    def __init__(self, rmr_xapp: RMRXapp, asn_proxy: AsnProxy, local_address="0.0.0.0", http_port=8080, rmr_port=4560,
-                 report_period=1000) -> None:
+    def __init__(self, rmr_xapp: RMRXapp, asn_proxy: AsnProxy, sdl_mgr: SdlManager,
+                 local_address="0.0.0.0", http_port=8080, rmr_port=4560, report_period=1000) -> None:
         super().__init__(rmr_xapp)
         self.asn_proxy = asn_proxy
+        self.sdl_mgr = sdl_mgr
         self.gnb_list = []
         self.enb_list = []
         self.logger.set_level(Level.INFO)
@@ -114,14 +116,23 @@ class SubscriptionManager(_BaseManager):
                     # add base station Info
                     bs = BS()
                     fb = FactBase()
-                    bs.name = me_id # gnb_208_099_00000e00
+                    bs.name = me_id  # gnb_208_099_00000e00
                     bs.bs_id = -1  # new BS
                     bs.mcc = me_id.split("_")[1]
                     bs.mnc = me_id.split("_")[2]
                     bs.cell_id = me_id.split("_")[3]
                     bs.report_period = self.report_period
                     fb.add_bs(bs)
-                    fb.update_mobiflow()
+                    mf_list = fb.update_mobiflow()
+                    # test
+                    self.logger.info(f"[Test] Before: SDL keys: {self.sdl_mgr.get_sdl_keys(Constants.bs_mobiflow_ns)}")
+                    for mf in mf_list:
+                        # store Mobiflow to SDL
+                        self.logger.info(f"[MobiFlow] Storing MobiFlow record to SDL {mf.__str__()}")
+                        self.sdl_mgr.store_data_to_sdl(Constants.bs_mobiflow_ns, mf.msg_id, mf.__str__())
+
+                    # test
+                    self.logger.info(f"[Test] After: SDL keys: {self.sdl_mgr.get_sdl_keys(Constants.bs_mobiflow_ns)}")
                     return None
 
         except requests.exceptions.HTTPError as err_h:

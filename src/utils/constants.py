@@ -31,4 +31,6 @@ class Constants:
     SUBSCRIPTION_PORT = "3800"
     SUBSCRIPTION_REQ = 12011
     INDICATION_REQ = 12050  # TODO: need to figure how these constant values are defined
-
+    # Mobiflow related
+    bs_mobiflow_ns = "bs_mobiflow"
+    ue_mobiflow_ns = "ue_mobiflow"

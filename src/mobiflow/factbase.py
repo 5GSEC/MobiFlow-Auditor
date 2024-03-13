@@ -20,7 +20,8 @@ class FactBase:
                 cls._instance = super().__new__(cls, *args, **kwargs)
         return cls._instance
 
-    def update_mobiflow(self):
+    def update_mobiflow(self) -> list:
+        mf_list = []
         while True:
             write_should_end = True
             for ue in self.get_all_ue():
@@ -28,7 +29,7 @@ class FactBase:
                     write_should_end = False
                     # generate UE mobiflow record
                     umf, prev_rrc, prev_nas, prev_sec, rrc, nas, sec = ue.generate_mobiflow()
-                    print("[MobiFlow] Writing UE Mobiflow: " + umf.__str__())
+                    mf_list.append(umf)
                     # update BS
                     bs = self.get_bs(umf.bs_id)
                     if bs is not None:
@@ -38,9 +39,10 @@ class FactBase:
                     write_should_end = False
                     # generate BS mobiflow record
                     bmf = bs.generate_mobiflow()
-                    print("[MobiFlow] Writing BS Mobiflow: " + bmf.__str__())
+                    mf_list.append(bmf)
             if write_should_end:  # end writing if no mobiflow record to update
                 break
+        return mf_list
 
     def add_bs(self, bs: BS):
         with self._lock:
