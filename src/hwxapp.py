@@ -84,22 +84,13 @@ class HWXapp:
             connection_status = gnb_nb_identity.connection_status
             nodeb_info_json = self.sdl_mgr.get_nodeb_info_by_inventory_name(inventory_name)
             for ran_func in nodeb_info_json["gnb"]["ranFunctions"]:
-                rf_id = ran_func["ranFunctionId"]
-                rf_def = ran_func["ranFunctionDefinition"]
                 rf_oid = ran_func["ranFunctionOid"]
                 if rf_oid in TARGET_OID_LIST:
                     rmr_xapp.logger.debug(f"Found target ran function for gNB {inventory_name}: {ran_func}")
-
-                    decoded_rf_def = self.asn_proxy.decode_e2sm_kpm_ran_function_definition(rf_def)
-                    rmr_xapp.logger.debug(f"Decode RAN function def:\n {decoded_rf_def}")
-
-                    # subscribe_nb_list.append(gnb_nb_identity)
-                    # break
-
                     # Subscribe to NodeB
                     rmr_xapp.logger.debug(f"connection status {connection_status}")
                     if connection_status == 1:
-                        self.sub_mgr.send_subscription_request(gnb_nb_identity, rf_id)
+                        self.sub_mgr.send_subscription_request(gnb_nb_identity, ran_func)
 
         # TODO: keep polling node b list but do not block this function
 

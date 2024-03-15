@@ -30,7 +30,7 @@ from ..manager import SdlManager
 from ..asn1 import AsnProxy
 from ._BaseManager import _BaseManager
 from ..mobiflow import FactBase, BS, BSMobiFlow
-from ..utils import Constants
+from ..utils import Constants, find_all_values
 from mdclogpy import Level
 
 
@@ -77,8 +77,16 @@ class SubscriptionManager(_BaseManager):
         except requests.exceptions.RequestException as err:
             return "An Unknown Error occurred" + repr(err)
 
-    def send_subscription_request(self, nb_identity: NbIdentity, ran_function_id: int):
+    def send_subscription_request(self, nb_identity: NbIdentity, ran_function: dict):
         me_id = nb_identity.inventory_name
+        rf_id = ran_function["ranFunctionId"]
+        rf_def = ran_function["ranFunctionDefinition"]
+
+        decoded_rf_def = self.asn_proxy.decode_e2sm_kpm_ran_function_definition(rf_def)
+        self.logger.debug(f"Decode RAN function def:\n {decoded_rf_def}")
+        kpm_measurement_names = find_all_values(decoded_rf_def, "measName")
+        meas_list = ";".join(kpm_measurement_names)
+
         if me_id in self.subscription_list.keys():
             return  # subscription already exist
         subscription_params = {"ClientEndPoint": {"Host": self.__CLIENT_END_POINT,
@@ -86,7 +94,7 @@ class SubscriptionManager(_BaseManager):
                                                   "RMRPort": self.client_rmr_port
                                                  },
                                "Meid": me_id,
-                               "RANFunctionID": ran_function_id,
+                               "RANFunctionID": rf_id,
                                "E2SubscriptionDirectives":{
                                    "E2TimeoutTimerValue": 10,
                                    "E2RetryCount": 2,
@@ -97,7 +105,7 @@ class SubscriptionManager(_BaseManager):
                                                         "ActionToBeSetupList": [
                                                             {"ActionID": 0,
                                                              "ActionType": "report",
-                                                             "ActionDefinition": self.encode_action_definition(),
+                                                             "ActionDefinition": self.encode_action_definition(meas_list=meas_list),
                                                              "SubsequentActionType": "continue",
                                                              "TimeToWait": "w10ms"}
                                                        ]}]
@@ -188,11 +196,11 @@ class SubscriptionManager(_BaseManager):
         # [0x08, 0x03, 0xe7],  # 0x3e7 -> 1000
         return [0x08, (self.report_period-1) // 256, (self.report_period-1) % 256]
 
-    def encode_action_definition(self):
-        # hack for now until we find ways to encode / decode ASN1, this action def is dedicated for mobiflow kpm
-        action_def_hex = "000600000131001D003055452E524E5449003855452E494D534931003855452E494D534932002855452E524154004055452E4D5F544D5349006055452E4349504845525F414C47007855452E494E544547524954595F414C47005855452E454D4D5F4341555345007855452E52454C454153455F54494D4552008855452E45535441424C4953485F434155534500186D73673100186D73673200186D73673300186D73673400186D73673500186D73673600186D73673700186D73673800186D73673900206D7367313000206D7367313100206D7367313200206D7367313300206D7367313400206D7367313500206D7367313600206D7367313700206D7367313800206D7367313900206D736732304003E70000"
+    def encode_action_definition(self, meas_list: str, action_format=1, ric_style_type=6, cell_obj_id=1, subscription_id=1):
+        delimiter = ","
+        action_def_params = delimiter.join([str(action_format), str(ric_style_type), str(cell_obj_id), str(subscription_id), meas_list])
+        action_def_hex = self.asn_proxy.encode_e2sm_kpm_action_definition(action_def_params)
+        self.logger.debug(f"Encoded action definition hex payload: {action_def_hex}")
         action_def_encoded = [int(action_def_hex[i:i + 2], 16) for i in range(0, len(action_def_hex), 2)]
         return action_def_encoded
-
-
 

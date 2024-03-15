@@ -8,7 +8,7 @@ class AsnProxy(ABC):
     def __init__(self, path_wrapper_c_exec):
         self.wrapper_path = path_wrapper_c_exec
 
-    def encode_asn_struct(self, structure_name: str, hex_str: str) -> dict:
+    def encode_asn_struct(self, structure_name: str, hex_str: str) -> str:
         # Call the C program with the specified operation, structure name, and payload
         # operation = "encode"
         # result = subprocess.run([self.wrapper_path, operation, structure_name, hex_str], capture_output=True, text=True)
