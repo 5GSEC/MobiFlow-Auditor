@@ -148,7 +148,7 @@ void encode_action_definition(int format, long ricStyleType, char* cellObjID, lo
         fprintf(stderr, "Encode successful for E2SM_KPMv2_ActionDefinition, encoded bytes=%ld\n", er.encoded);
         char *hex_string = binary_to_hex_string(e2smbuffer, er.encoded);
         printf("%s\n", hex_string);
-        xer_fprint(stdout, &asn_DEF_E2SM_KPMv2_ActionDefinition, actionDef);
+        // xer_fprint(stdout, &asn_DEF_E2SM_KPMv2_ActionDefinition, actionDef);
     }
 
     free(actionDefFormat1);
@@ -195,6 +195,7 @@ void encode_data_structure(const char* structure_name, const char* payload) {
         }
         if (index != 6) {
             fprintf(stderr, "Incorrect arg num for encoding E2SM_KPMv2_ActionDefinition: %d\n", index);
+            return;
         }
         encode_action_definition(format, ricStyleType, cellObjID, granularityPeriod, subId, measList);
     }
@@ -225,5 +226,6 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
+
 
 

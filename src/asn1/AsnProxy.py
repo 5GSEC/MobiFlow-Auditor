@@ -10,10 +10,9 @@ class AsnProxy(ABC):
 
     def encode_asn_struct(self, structure_name: str, hex_str: str) -> str:
         # Call the C program with the specified operation, structure name, and payload
-        # operation = "encode"
-        # result = subprocess.run([self.wrapper_path, operation, structure_name, hex_str], capture_output=True, text=True)
-        # # Return the result
-        raise NotImplementedError
+        operation = "encode"
+        result = subprocess.run([self.wrapper_path, operation, structure_name, hex_str], capture_output=True, text=True)
+        return str(result.stdout.strip())
 
     def decode_asn_struct(self, structure_name: str, hex_str: str) -> dict:
         # Call the C program with the specified operation, structure name, and payload
@@ -63,3 +62,4 @@ class AsnProxy(ABC):
         }
 
         return result
+

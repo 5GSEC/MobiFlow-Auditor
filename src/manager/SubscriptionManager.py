@@ -198,9 +198,11 @@ class SubscriptionManager(_BaseManager):
 
     def encode_action_definition(self, meas_list: str, action_format=1, ric_style_type=6, cell_obj_id=1, subscription_id=1):
         delimiter = ","
-        action_def_params = delimiter.join([str(action_format), str(ric_style_type), str(cell_obj_id), str(subscription_id), meas_list])
+        action_def_params = delimiter.join([str(action_format), str(ric_style_type), str(cell_obj_id),
+                                            str(self.report_period), str(subscription_id), meas_list])
         action_def_hex = self.asn_proxy.encode_e2sm_kpm_action_definition(action_def_params)
         self.logger.debug(f"Encoded action definition hex payload: {action_def_hex}")
         action_def_encoded = [int(action_def_hex[i:i + 2], 16) for i in range(0, len(action_def_hex), 2)]
         return action_def_encoded
+
 
