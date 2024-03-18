@@ -1,2 +1,2 @@
 #!/bin/bash
-sudo -E dms_cli uninstall mobiflow-auditor ricxapp
+sudo -E dms_cli uninstall template-xapp ricxapp

@@ -1,6 +1,6 @@
 ---
-project: 'mobiflow_auditor'
-project_creation_date: '2024-3-2'
+project: 'template-xapp'
+project_creation_date: '2024-3-18'
 project_category: ''
 lifecycle_state: 'Incubation'
 project_lead: &oran_ric_app_se_ran
@@ -12,14 +12,14 @@ project_lead: &oran_ric_app_se_ran
 primary_contact: *oran_ric_app_se_ran
 issue_tracking:
     type: 'Github'
-    url: 'https://github.com/5GSEC/MobiFlow-Auditor/issues'
+    url: 'https://github.com/5GSEC/template-xapp/issues'
     key: 'MobiFlow-Auditor'
 mailing_list:
     type: 'groups.io'
     url: 'https://lists.o-ran-sc.org/g/main'
     tag: '[]'
 repositories:
-    - 5GSEC/MobiFlow-Auditor 
+    - 5GSEC/template-xapp
 committers:
     - <<: *oran_ric_app_se_ran
     - name: 'Haohuang Wen'
@@ -27,9 +27,4 @@ committers:
       company: 'The Ohio State University'
       id: 'onehouwong'
       timezone: 'America/New_York'
-    # - name: 'Naman Gupta'
-    #   email: 'naman.gupta@samsung.com'
-    #   company: 'Samsung'
-    #   id: 'naman.gupta'
-    #   timezone: 'Asia/Kolkata'
 

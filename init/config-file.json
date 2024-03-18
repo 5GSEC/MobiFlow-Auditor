@@ -1,12 +1,12 @@
 {
-    "name": "mobiflow-auditor",
+    "name": "template-xapp",
     "version": "0.0.1",
     "containers": [
         {
-            "name": "mobiflow-auditor",
+            "name": "template-xapp",
             "image": {
                 "registry": "5gsec.se-ran.org:10004",
-                "name": "xapp/mobiflow-auditor",
+                "name": "xapp/template-xapp",
                 "tag": "0.0.1"
             }
         }
@@ -15,19 +15,19 @@
         "ports": [
             {
                 "name": "http",
-                "container": "mobiflow-auditor",
+                "container": "template-xapp",
                 "port": 8080,
                 "description": "http service"
             },
             {
                 "name": "rmrroute",
-                "container": "mobiflow-auditor",
+                "container": "template-xapp",
                 "port": 4561,
-                "description": "rmr route port for mobiflow-auditor xapp"
+                "description": "rmr route port for the xApp"
             },
             {
                 "name": "rmrdata",
-                "container": "mobiflow-auditor",
+                "container": "template-xapp",
                 "port": 4560,
                 "rxMessages": ["RIC_SUB_RESP", "RIC_SUB_FAILURE", "RIC_SUB_DEL_RESP", "RIC_INDICATION"],
                 "txMessages": ["RIC_SUB_REQ", "RIC_SUB_DEL_REQ", "RIC_SGNB_ADDITION_REQ", "RIC_SGNB_ADDITION_ACK"],
@@ -36,7 +36,7 @@
                         {"name":"TESTNAME2","id":55556}
                 ],
                 "policies": [1],
-                "description": "rmr data port for mobiflow-auditor"
+                "description": "rmr data port for the xApp"
             }
         ]
     },

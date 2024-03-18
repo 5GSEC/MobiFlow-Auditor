@@ -24,12 +24,12 @@ def read(fname):
 
 
 setup(
-    name='mobiflow_auditor',
+    name='template-xapp',
     version='0.0.1',
     packages=find_packages(),
-    url='https://github.com/5GSEC/MobiFlow-Auditor',
+    url='https://5gsec.com',
     license='Apache 2.0',
-    description="O-RAN compliant xApp supporting fine-grained and security-aware statistics monitoring over the RAN data plane",
+    description="xApp description",
     long_description=read('README.md'),
     author='SE-RAN',
     author_email='team@5gsec.com',

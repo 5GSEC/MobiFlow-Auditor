@@ -19,13 +19,13 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: mobiflow-auditor
+  name: template_xapp
   labels:
     role: xapp
 spec:
   containers:
-    - name: mobiflow-auditor
-      image: mobiflow-auditor:1.0
+    - name: template_xapp
+      image: template_xapp:0.0.1
       ports:
         - name: rmr
           containerPort: 4560

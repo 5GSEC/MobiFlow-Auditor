@@ -22,5 +22,3 @@ from .SdlManager import SdlManager
 from .SubscriptionManager import SubscriptionManager
 from .MetricManager import MetricManager
 
-
-

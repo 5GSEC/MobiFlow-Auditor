@@ -16,12 +16,12 @@
 #
 # ==================================================================================
 
-from .hwxapp import HWXapp
+from .xapp import TemplateXapp
 
 
 def launchXapp():
-    hwxapp = HWXapp()
-    hwxapp.start()
+    template_xapp = TemplateXapp()
+    template_xapp.start()
 
 
 if __name__ == "__main__":

@@ -19,5 +19,3 @@
 from .A1PolicyHandler import A1PolicyHandler
 from .HealthCheckHandler import HealthCheckHandler
 from .SubscriptionHandler import SubscriptionHandler
-from .KpmIndicationHandler import KpmIndicationHandler
-

@@ -15,22 +15,18 @@
 #   limitations under the License.
 #
 # ==================================================================================
-import time
-
 import requests
 from os import getenv
 from ricxappframe.xapp_frame import RMRXapp, rmr
 from .utils.constants import Constants
 from .manager import *
 from .handler import *
-from .asn1 import OnosAsnProxy
-from .mobiflow import FactBase
 from mdclogpy import Level
 
-class HWXapp:
+class TemplateXapp:
 
     __XAPP_CONFIG_PATH = "/tmp/init/config-file.json"
-    __XAPP_NAME = "mobiflow-auditor"
+    __XAPP_NAME = "template-xapp"
     __XAPP_VERSION = "0.0.1"
     __XAPP_NAME_SPACE = "ricxapp"
     __PLT_NAME_SPACE = "ricplt"
@@ -39,11 +35,9 @@ class HWXapp:
     __XAPP_HTTP_END_POINT = "service-%s-%s-http.%s:%d" % (__XAPP_NAME_SPACE, __XAPP_NAME, __XAPP_NAME_SPACE, __HTTP_PORT)
     __XAPP_RMR_END_POINT = "service-%s-%s-rmr.%s:%d" % (__XAPP_NAME_SPACE, __XAPP_NAME, __XAPP_NAME_SPACE, __RMR_PORT)
     __CONFIG_PATH = "/ric/v1/config"
-    __ASN_WRAPPER_PATH = "/tmp/src/asn1/wrapper"
 
     def __init__(self):
         fake_sdl = getenv("USE_FAKE_SDL", False)
-        self.asn_proxy = OnosAsnProxy(self.__ASN_WRAPPER_PATH)
         self._rmr_xapp = RMRXapp(self._default_handler,
                                  config_handler=self._handle_config_change,
                                  rmr_port=self.__RMR_PORT,
@@ -56,46 +50,36 @@ class HWXapp:
         """
         rmr_xapp.logger.set_level(Level.INFO)
         rmr_xapp.logger.info("HWXapp.post_init :: post_init called")
-        self.sdl_mgr = SdlManager(rmr_xapp)
-        self.sub_mgr = SubscriptionManager(rmr_xapp, self.asn_proxy, self.sdl_mgr)
-        # self.sdl_alarm_mgr = SdlAlarmManager()
-        # a1_mgr = A1PolicyManager(rmr_xapp)
-        # a1_mgr.startup()
-        # metric_mgr = MetricManager(rmr_xapp)
-        # metric_mgr.send_metric()
+        sdl_mgr = SdlManager(rmr_xapp)
+        sub_mgr = SubscriptionManager(rmr_xapp)
+        sdl_alarm_mgr = SdlAlarmManager(rmr_xapp)
+        a1_mgr = A1PolicyManager(rmr_xapp)
+        a1_mgr.startup()
+        metric_mgr = MetricManager(rmr_xapp)
+        metric_mgr.send_metric()
 
+        # register the xApp to the RIC manager
         self._register(rmr_xapp)
 
-        TARGET_OID_LIST = ["1.3.6.1.4.1.53148.1.2.2.2"]
-
-        # create and init fact base
-        fb = FactBase()
-
         # obtain nodeb list for subscription
-        enb_list = self.sdl_mgr.get_enb_list()
-        subscribe_nb_list = []
+        enb_list = sdl_mgr.get_enb_list()
         for enb_nb_identity in enb_list:
             inventory_name = enb_nb_identity.inventory_name
-            nodeb_info_json = self.sdl_mgr.get_nodeb_info_by_inventory_name(inventory_name)
+            nodeb_info_json = sdl_mgr.get_nodeb_info_by_inventory_name(inventory_name)
 
-        gnb_list = self.sdl_mgr.get_gnb_list()
+        gnb_list = sdl_mgr.get_gnb_list()
         for gnb_nb_identity in gnb_list:
             inventory_name = gnb_nb_identity.inventory_name
             connection_status = gnb_nb_identity.connection_status
-            nodeb_info_json = self.sdl_mgr.get_nodeb_info_by_inventory_name(inventory_name)
-            for ran_func in nodeb_info_json["gnb"]["ranFunctions"]:
-                rf_oid = ran_func["ranFunctionOid"]
-                if rf_oid in TARGET_OID_LIST:
-                    rmr_xapp.logger.debug(f"Found target ran function for gNB {inventory_name}: {ran_func}")
-                    # Subscribe to NodeB
-                    rmr_xapp.logger.debug(f"connection status {connection_status}")
-                    if connection_status == 1:
-                        self.sub_mgr.send_subscription_request(gnb_nb_identity, ran_func)
-
-        # TODO: keep polling node b list but do not block this function
+            nodeb_info_json = sdl_mgr.get_nodeb_info_by_inventory_name(inventory_name)
 
     def _register(self, rmr_xapp):
-        # Register xApp to the App mgr
+        """
+        Register the xApp to the App manager of the near-RT RIC
+
+        Parameters:
+            rmr_xapp: instance of RMRXapp
+        """
         url = "http://service-%s-appmgr-http.%s:8080/ric/v1/register" % (self.__PLT_NAME_SPACE, self.__PLT_NAME_SPACE)
         with open(self.__XAPP_CONFIG_PATH, 'r') as config_file:
             config_json_str = config_file.read()
@@ -119,7 +103,12 @@ class HWXapp:
             rmr_xapp.logger.error("An IO Error occurred:" + repr(err_h))
 
     def _deregister(self, rmr_xapp):
-        # Deregister xApp to the App mgr
+        """
+        Deregister the xApp to the App manager of the near-RT RIC
+
+        Parameters:
+            rmr_xapp: instance of RMRXapp
+        """
         url = "http://service-%s-appmgr-http.%s:8080/ric/v1/deregister" % (self.__PLT_NAME_SPACE, self.__PLT_NAME_SPACE)
         body = {
             "appName": self.__XAPP_NAME,
@@ -157,7 +146,6 @@ class HWXapp:
         HealthCheckHandler(self._rmr_xapp, Constants.RIC_HEALTH_CHECK_REQ)
         A1PolicyHandler(self._rmr_xapp, Constants.A1_POLICY_REQ)
         SubscriptionHandler(self._rmr_xapp, Constants.SUBSCRIPTION_REQ)
-        KpmIndicationHandler(self._rmr_xapp, Constants.INDICATION_REQ, self.asn_proxy, self.sdl_mgr)
 
     def start(self, thread=False):
         """
