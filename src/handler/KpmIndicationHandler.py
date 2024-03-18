@@ -125,11 +125,17 @@ class KpmIndicationHandler(_BaseHandler):
         for mf in mf_list:
             # store Mobiflow to SDL
             self.logger.info(f"[MobiFlow] Storing MobiFlow record to SDL {mf.__str__()}")
-            self.sdl_mgr.store_data_to_sdl(Constants.ue_mobiflow_ns, str(mf.msg_id), mf.__str__())
+            if mf.msg_type == "UE":
+                self.sdl_mgr.store_data_to_sdl(Constants.ue_mobiflow_ns, str(mf.msg_id), mf.__str__())
+            elif mf.msg_type == "BS":
+                self.sdl_mgr.store_data_to_sdl(Constants.bs_mobiflow_ns, str(mf.msg_id), mf.__str__())
+            else:
+                raise NotImplementedError
 
     def verify_indication(self, req: dict):
         # TODO
         return True
+
 
 
 

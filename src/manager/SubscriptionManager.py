@@ -135,6 +135,7 @@ class SubscriptionManager(_BaseManager):
                     # test
                     for mf in mf_list:
                         # store Mobiflow to SDL
+                        self.logger.info(f"[MobiFlow] Storing MobiFlow record to SDL {mf.__str__()}")
                         self.sdl_mgr.store_data_to_sdl(Constants.bs_mobiflow_ns, str(mf.msg_id), mf.__str__())
 
                     return None
@@ -204,5 +205,6 @@ class SubscriptionManager(_BaseManager):
         self.logger.debug(f"Encoded action definition hex payload: {action_def_hex}")
         action_def_encoded = [int(action_def_hex[i:i + 2], 16) for i in range(0, len(action_def_hex), 2)]
         return action_def_encoded
+
 
 
