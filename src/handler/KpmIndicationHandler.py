@@ -3,11 +3,10 @@ import binascii
 from mdclogpy import Level
 from ricxappframe.xapp_frame import RMRXapp, rmr
 from ..asn1 import AsnProxy
-from ..utils import Constants
 from ..manager import SdlManager
 from ._BaseHandler import _BaseHandler
 from ..utils.utils import find_all_values
-from ..mobiflow import FactBase, UE, decode_rrc_msg, decode_nas_msg
+from ..mobiflow import FactBase, UE, decode_rrc_msg, decode_nas_msg, UE_MOBIFLOW_NS, BS_MOBIFLOW_NS
 
 class KpmIndicationHandler(_BaseHandler):
 
@@ -126,9 +125,9 @@ class KpmIndicationHandler(_BaseHandler):
             # store Mobiflow to SDL
             self.logger.info(f"[MobiFlow] Storing MobiFlow record to SDL {mf.__str__()}")
             if mf.msg_type == "UE":
-                self.sdl_mgr.store_data_to_sdl(Constants.ue_mobiflow_ns, str(mf.msg_id), mf.__str__())
+                self.sdl_mgr.store_data_to_sdl(UE_MOBIFLOW_NS, str(mf.msg_id), mf.__str__())
             elif mf.msg_type == "BS":
-                self.sdl_mgr.store_data_to_sdl(Constants.bs_mobiflow_ns, str(mf.msg_id), mf.__str__())
+                self.sdl_mgr.store_data_to_sdl(BS_MOBIFLOW_NS, str(mf.msg_id), mf.__str__())
             else:
                 raise NotImplementedError
 
