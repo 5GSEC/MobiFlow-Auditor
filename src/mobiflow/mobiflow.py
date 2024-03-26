@@ -159,8 +159,8 @@ class UE:
 
     def update(self, ur) -> bool:
         if isinstance(ur, UE):
-            if self.msg_trace.__len__() != ur.msg_trace.__len__():
-                self.msg_trace = ur.msg_trace
+            if len(ur.msg_trace) != 0:
+                self.msg_trace = self.msg_trace + ur.msg_trace
                 self.should_report = True
             if self.tmsi != ur.tmsi:
                 self.tmsi = ur.tmsi
@@ -364,5 +364,6 @@ class BS:
         bmf.inactive_timer = self.inactive_timer
         self.should_report = False
         return bmf
+
 
 
