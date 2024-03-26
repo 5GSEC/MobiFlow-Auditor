@@ -29,7 +29,7 @@ from ricxappframe.entities.rnib.nb_identity_pb2 import NbIdentity
 from ..manager import SdlManager
 from ..asn1 import AsnProxy
 from ._BaseManager import _BaseManager
-from ..mobiflow import FactBase, BS, BSMobiFlow
+from ..mobiflow import FactBase, BS, BS_MOBIFLOW_NS
 from ..utils import Constants, find_all_values
 from mdclogpy import Level
 
@@ -136,7 +136,7 @@ class SubscriptionManager(_BaseManager):
                     for mf in mf_list:
                         # store Mobiflow to SDL
                         self.logger.info(f"[MobiFlow] Storing MobiFlow record to SDL {mf.__str__()}")
-                        self.sdl_mgr.store_data_to_sdl(Constants.bs_mobiflow_ns, str(mf.msg_id), mf.__str__())
+                        self.sdl_mgr.store_data_to_sdl(BS_MOBIFLOW_NS, str(mf.msg_id), mf.__str__())
 
                     return None
 
