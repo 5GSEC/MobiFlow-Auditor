@@ -132,7 +132,6 @@ class SubscriptionManager(_BaseManager):
                     bs.report_period = self.report_period
                     fb.add_bs(bs)
                     mf_list = fb.update_mobiflow()
-                    # test
                     for mf in mf_list:
                         # store Mobiflow to SDL
                         self.logger.info(f"[MobiFlow] Storing MobiFlow record to SDL {mf.__str__()}")
