@@ -217,8 +217,8 @@ class UE:
         elif msg == "SERVICE_REQUEST": # LTE: The UE shall treat that the service request procedure as successful, when the lower layers indicate that the user plane radio bearer is successfully set up
             self.nas_state = EMMState.EMM_REGISTERED
 
-        elif msg == "SecurityModeComplete" \
-                or msg == "Securitymodecomplete":
+        elif msg == "SecurityModeComplete": # RRC security state
+                # or msg == "Securitymodecomplete":
             self.sec_state = SecState.SEC_CONTEXT_EXIST
 
         elif msg == "ATTACH_COMPLETE"\
