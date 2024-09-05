@@ -20,6 +20,8 @@ class AsnProxy(ABC):
         result = subprocess.run([self.wrapper_path, operation, structure_name, hex_str], capture_output=True, text=True)
         # Return the result
         xml_str = result.stdout.strip()
+        if len(xml_str.strip()) == 0:
+            return None
         return self.element_to_dict(ET.fromstring(xml_str))
 
     @abstractmethod
@@ -55,11 +57,15 @@ class AsnProxy(ABC):
         pass
 
     def element_to_dict(self, element) -> dict:
-        # Initialize the dictionary to store the element's tag, text, and children
-        result = {
-            element.tag: element.text.strip() if element.text is not None and element.text.strip() != "" else [
-                self. element_to_dict(child) for child in element],
-        }
+        result = None
+        try:
+            # Initialize the dictionary to store the element's tag, text, and children
+            result = {
+                element.tag: element.text.strip() if element.text is not None and element.text.strip() != "" else [
+                    self. element_to_dict(child) for child in element],
+            }
+        except ET.ParseError as e:
+            return None
 
         return result
 
