@@ -200,10 +200,10 @@ class SubscriptionManager(_BaseManager):
         # [0x08, 0x03, 0xe7],  # 0x3e7 -> 1000
         return [0x08, (self.report_period-1) // 256, (self.report_period-1) % 256]
 
-    def encode_action_definition(self, meas_list: str, action_format=1, ric_style_type=6, subscription_id=1):
+    def encode_action_definition(self, meas_list: str, action_format=1, ric_style_type=6):
         delimiter = ","
         action_def_params = delimiter.join([str(action_format), str(ric_style_type),
-                                            str(self.report_period), str(subscription_id), meas_list])
+                                            str(self.report_period), meas_list])
         action_def_hex = self.asn_proxy.encode_e2sm_kpm_action_definition(action_def_params)
         self.logger.debug(f"Encoded action definition hex payload: {action_def_hex}")
         action_def_encoded = [int(action_def_hex[i:i + 2], 16) for i in range(0, len(action_def_hex), 2)]

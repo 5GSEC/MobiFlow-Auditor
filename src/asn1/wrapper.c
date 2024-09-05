@@ -158,7 +158,7 @@ void encode_data_structure(const char* structure_name, const char* payload) {
         int index = 0;
         int format;
         long ricStyleType, granularityPeriod;
-        char *cellObjID, *measList;
+        char *measList;
         char *token = strtok(copiedPayload, delimiter);
         while(token != NULL) {
             switch (index) {
