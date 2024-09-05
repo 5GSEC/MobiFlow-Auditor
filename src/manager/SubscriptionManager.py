@@ -83,7 +83,7 @@ class SubscriptionManager(_BaseManager):
         rf_def = ran_function["ranFunctionDefinition"]
 
         decoded_rf_def = self.asn_proxy.decode_e2sm_kpm_ran_function_definition(rf_def)
-        if decoded_rf_def == None or len(decoded_rf_def == 0):
+        if decoded_rf_def == None:
             self.logger.error(f"Fail to decode RAN function def. Payload {rf_def}")
             return
         self.logger.debug(f"Decode RAN function def:\n {decoded_rf_def}")
