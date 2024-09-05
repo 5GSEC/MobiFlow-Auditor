@@ -414,33 +414,6 @@ asn_ulong2INTEGER(INTEGER_t *st, unsigned long value) {
     return asn_imax2INTEGER(st, value);
 }
 
-int asn_INTEGER2int64(const INTEGER_t *st, int64_t *value) {
-    intmax_t v;
-    if(asn_INTEGER2imax(st, &v) == 0) {
-        if(v < INT64_MIN || v > INT64_MAX) {
-            errno = ERANGE;
-            return -1;
-        }
-        *value = v;
-        return 0;
-    } else {
-        return -1;
-    }
-}
-
-int asn_INTEGER2uint64(const INTEGER_t *st, uint64_t *value) {
-    uintmax_t v;
-    if(asn_INTEGER2umax(st, &v) == 0) {
-        if(v > UINT64_MAX) {
-            errno = ERANGE;
-            return -1;
-        }
-        *value = v;
-        return 0;
-    } else {
-        return -1;
-    }
-}
 
 int
 asn_uint642INTEGER(INTEGER_t *st, uint64_t value) {

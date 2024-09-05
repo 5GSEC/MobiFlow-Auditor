@@ -7,7 +7,7 @@
 
 #include "GlobalE2node-gNB-ID.h"
 
-#include "GlobalenGNB-ID.h"
+#include "E2AP-IEs_GlobalenGNB-ID.h"
 asn_TYPE_member_t asn_MBR_GlobalE2node_gNB_ID_1[] = {
 	{ ATF_NOFLAGS, 0, offsetof(struct GlobalE2node_gNB_ID, global_gNB_ID),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
@@ -29,7 +29,7 @@ asn_TYPE_member_t asn_MBR_GlobalE2node_gNB_ID_1[] = {
 	{ ATF_POINTER, 3, offsetof(struct GlobalE2node_gNB_ID, global_en_gNB_ID),
 		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_GlobalenGNB_ID,
+		&asn_DEF_E2AP_IEs_GlobalenGNB_ID,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -46,7 +46,7 @@ asn_TYPE_member_t asn_MBR_GlobalE2node_gNB_ID_1[] = {
 	{ ATF_POINTER, 2, offsetof(struct GlobalE2node_gNB_ID, gNB_CU_UP_ID),
 		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_GNB_CU_UP_ID,
+		&asn_DEF_E2AP_IEs_GNB_CU_UP_ID,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -63,7 +63,7 @@ asn_TYPE_member_t asn_MBR_GlobalE2node_gNB_ID_1[] = {
 	{ ATF_POINTER, 1, offsetof(struct GlobalE2node_gNB_ID, gNB_DU_ID),
 		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_GNB_DU_ID,
+		&asn_DEF_E2AP_IEs_GNB_DU_ID,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)

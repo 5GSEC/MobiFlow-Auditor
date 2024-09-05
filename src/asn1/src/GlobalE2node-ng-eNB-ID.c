@@ -7,7 +7,7 @@
 
 #include "GlobalE2node-ng-eNB-ID.h"
 
-#include "GlobalENB-ID.h"
+#include "E2AP-IEs_GlobalENB-ID.h"
 asn_TYPE_member_t asn_MBR_GlobalE2node_ng_eNB_ID_1[] = {
 	{ ATF_NOFLAGS, 0, offsetof(struct GlobalE2node_ng_eNB_ID, global_ng_eNB_ID),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
@@ -29,7 +29,7 @@ asn_TYPE_member_t asn_MBR_GlobalE2node_ng_eNB_ID_1[] = {
 	{ ATF_POINTER, 2, offsetof(struct GlobalE2node_ng_eNB_ID, global_eNB_ID),
 		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_GlobalENB_ID,
+		&asn_DEF_E2AP_IEs_GlobalENB_ID,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -46,7 +46,7 @@ asn_TYPE_member_t asn_MBR_GlobalE2node_ng_eNB_ID_1[] = {
 	{ ATF_POINTER, 1, offsetof(struct GlobalE2node_ng_eNB_ID, ngENB_DU_ID),
 		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_NGENB_DU_ID,
+		&asn_DEF_E2AP_IEs_NGENB_DU_ID,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)

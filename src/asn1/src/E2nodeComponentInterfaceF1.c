@@ -11,7 +11,7 @@ asn_TYPE_member_t asn_MBR_E2nodeComponentInterfaceF1_1[] = {
 	{ ATF_NOFLAGS, 0, offsetof(struct E2nodeComponentInterfaceF1, gNB_DU_ID),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_GNB_DU_ID,
+		&asn_DEF_E2AP_IEs_GNB_DU_ID,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)

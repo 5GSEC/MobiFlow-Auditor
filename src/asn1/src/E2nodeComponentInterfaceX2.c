@@ -7,13 +7,13 @@
 
 #include "E2nodeComponentInterfaceX2.h"
 
-#include "GlobalENB-ID.h"
-#include "GlobalenGNB-ID.h"
+#include "E2AP-IEs_GlobalENB-ID.h"
+#include "E2AP-IEs_GlobalenGNB-ID.h"
 asn_TYPE_member_t asn_MBR_E2nodeComponentInterfaceX2_1[] = {
 	{ ATF_POINTER, 2, offsetof(struct E2nodeComponentInterfaceX2, global_eNB_ID),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_GlobalENB_ID,
+		&asn_DEF_E2AP_IEs_GlobalENB_ID,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -30,7 +30,7 @@ asn_TYPE_member_t asn_MBR_E2nodeComponentInterfaceX2_1[] = {
 	{ ATF_POINTER, 1, offsetof(struct E2nodeComponentInterfaceX2, global_en_gNB_ID),
 		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_GlobalenGNB_ID,
+		&asn_DEF_E2AP_IEs_GlobalenGNB_ID,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)

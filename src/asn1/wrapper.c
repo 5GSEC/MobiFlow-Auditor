@@ -1,16 +1,17 @@
+/**
+    This wrapper code is dedicated for the O-RAN KPM spec
+ */ 
 #include <stdio.h>
 #include "asn_application.h"
 #include "E2AP-PDU.h"
-#include "E2SM-KPMv2-IndicationMessage.h"
-#include "E2SM-KPMv2-ActionDefinition.h"
-#include "E2SM-KPMv2-RANfunction-Description.h"
-#include "E2SM-KPMv2-ActionDefinition-Format1.h"
-#include "GranularityPeriod-KPMv2.h"
-#include "SubscriptionID-KPMv2.h"
-#include "CellObjectID-KPMv2.h"
-#include "MeasurementInfoList-KPMv2.h"
-#include "MeasurementInfoItem-KPMv2.h"
-#include "MeasurementType-KPMv2.h"
+#include "E2SM-KPM-IndicationMessage.h"
+#include "E2SM-KPM-ActionDefinition.h"
+#include "E2SM-KPM-RANfunction-Description.h"
+#include "E2SM-KPM-ActionDefinition-Format1.h"
+#include "GranularityPeriod.h"
+#include "MeasurementInfoList.h"
+#include "MeasurementInfoItem.h"
+#include "MeasurementType.h"
 
 void decode_data_structure(const char* structure_name, const char* hex_payload) {
      // Convert hex payload to binary
@@ -35,9 +36,9 @@ void decode_data_structure(const char* structure_name, const char* hex_payload) 
          size_t size;
      } structure_mapping[] = {
          {"E2AP_PDU", &asn_DEF_E2AP_PDU, sizeof(E2AP_PDU_t)},
-         {"E2SM_KPMv2_IndicationMessage", &asn_DEF_E2SM_KPMv2_IndicationMessage, sizeof(E2SM_KPMv2_IndicationMessage_t)},
-         {"E2SM_KPMv2_ActionDefinition", &asn_DEF_E2SM_KPMv2_ActionDefinition, sizeof(E2SM_KPMv2_ActionDefinition_t)},
-         {"E2SM_KPMv2_RANfunction_Description", &asn_DEF_E2SM_KPMv2_RANfunction_Description, sizeof(E2SM_KPMv2_RANfunction_Description_t)},
+         {"E2SM_KPM_IndicationMessage", &asn_DEF_E2SM_KPM_IndicationMessage, sizeof(E2SM_KPM_IndicationMessage_t)},
+         {"E2SM_KPM_ActionDefinition", &asn_DEF_E2SM_KPM_ActionDefinition, sizeof(E2SM_KPM_ActionDefinition_t)},
+         {"E2SM_KPM_RANfunction_Description", &asn_DEF_E2SM_KPM_RANfunction_Description, sizeof(E2SM_KPM_RANfunction_Description_t)},
      };
 
      for (int i = 0; i < sizeof(structure_mapping) / sizeof(structure_mapping[0]); i++) {
@@ -88,9 +89,9 @@ char* binary_to_hex_string(const uint8_t* binary_data, size_t data_len) {
 }
 
 // Function to encode action definition
-void encode_action_definition(int format, long ricStyleType, char* cellObjID, long granularityPeriod, long subId, char* measList) {
-    E2SM_KPMv2_ActionDefinition_t *actionDef = (E2SM_KPMv2_ActionDefinition_t *) calloc(1, sizeof(E2SM_KPMv2_ActionDefinition_t));
-    E2SM_KPMv2_ActionDefinition_Format1_t *actionDefFormat1;
+void encode_action_definition(int format, long ricStyleType, long granularityPeriod, char* measList) {
+    E2SM_KPM_ActionDefinition_t *actionDef = (E2SM_KPM_ActionDefinition_t *) calloc(1, sizeof(E2SM_KPM_ActionDefinition_t));
+    E2SM_KPM_ActionDefinition_Format1_t *actionDefFormat1;
 
     if (!actionDef) {
         fprintf(stderr, "alloc RIC ActionDefinition failed\n");
@@ -102,27 +103,19 @@ void encode_action_definition(int format, long ricStyleType, char* cellObjID, lo
 
     // currently only support format 1
     if (format == 1) {
-        actionDefFormat1 = (E2SM_KPMv2_ActionDefinition_Format1_t *)calloc(1, sizeof(E2SM_KPMv2_ActionDefinition_Format1_t));
-
-        // cellObjID
-        actionDefFormat1->cellObjID.buf = (uint8_t *)strdup(cellObjID);
-        actionDefFormat1->cellObjID.size = strlen(cellObjID);
+        actionDefFormat1 = (E2SM_KPM_ActionDefinition_Format1_t *)calloc(1, sizeof(E2SM_KPM_ActionDefinition_Format1_t));
 
         // granularity period
         actionDefFormat1->granulPeriod = granularityPeriod;
 
-        // subscription ID
-        SubscriptionID_KPMv2_t g_subscriptionID;
-        actionDefFormat1->subscriptID = subId;
-
         // measurement items
-        MeasurementInfoItem_KPMv2_t* actionDefMeasInfoItem;
+        MeasurementInfoItem_t* actionDefMeasInfoItem;
         int measItemSize = 0;
         const char *delimiter = ";"; // assume the delimiter is ";"
         char *token = strtok(measList, delimiter);
         while(token != NULL) {
-            actionDefMeasInfoItem = (MeasurementInfoItem_KPMv2_t *)calloc(1, sizeof(MeasurementInfoItem_KPMv2_t));
-            actionDefMeasInfoItem->measType.present = MeasurementType_KPMv2_PR_measName;
+            actionDefMeasInfoItem = (MeasurementInfoItem_t *)calloc(1, sizeof(MeasurementInfoItem_t));
+            actionDefMeasInfoItem->measType.present = MeasurementType_PR_measName;
             actionDefMeasInfoItem->measType.choice.measName.buf = (uint8_t *)strdup(token);
             actionDefMeasInfoItem->measType.choice.measName.size = strlen(token);
             ASN_SEQUENCE_ADD(&actionDefFormat1->measInfoList, actionDefMeasInfoItem);
@@ -131,24 +124,24 @@ void encode_action_definition(int format, long ricStyleType, char* cellObjID, lo
         }
         actionDefFormat1->measInfoList.list.count = measItemSize;
 
-        actionDef->actionDefinition_formats.present = E2SM_KPMv2_ActionDefinition__actionDefinition_formats_PR_actionDefinition_Format1;
+        actionDef->actionDefinition_formats.present = E2SM_KPM_ActionDefinition__actionDefinition_formats_PR_actionDefinition_Format1;
         actionDef->actionDefinition_formats.choice.actionDefinition_Format1 = actionDefFormat1;
     }
 
     // encode
     uint8_t e2smbuffer[8192];
     size_t e2smbuffer_size = 8192;
-    asn_enc_rval_t er = asn_encode_to_buffer(NULL, ATS_ALIGNED_BASIC_PER, &asn_DEF_E2SM_KPMv2_ActionDefinition,
+    asn_enc_rval_t er = asn_encode_to_buffer(NULL, ATS_ALIGNED_BASIC_PER, &asn_DEF_E2SM_KPM_ActionDefinition,
             actionDef, e2smbuffer, e2smbuffer_size);
 
     if (er.encoded < 0) {
-        fprintf(stderr, "Encode failure for E2SM_KPMv2_ActionDefinition, name=%s, tag=%s\n", er.failed_type->name, er.failed_type->xml_tag);
+        fprintf(stderr, "Encode failure for E2SM_KPM_ActionDefinition, name=%s, tag=%s\n", er.failed_type->name, er.failed_type->xml_tag);
     }
     else {
-        fprintf(stderr, "Encode successful for E2SM_KPMv2_ActionDefinition, encoded bytes=%ld\n", er.encoded);
+        fprintf(stderr, "Encode successful for E2SM_KPM_ActionDefinition, encoded bytes=%ld\n", er.encoded);
         char *hex_string = binary_to_hex_string(e2smbuffer, er.encoded);
         printf("%s\n", hex_string);
-        // xer_fprint(stdout, &asn_DEF_E2SM_KPMv2_ActionDefinition, actionDef);
+        // xer_fprint(stdout, &asn_DEF_E2SM_KPM_ActionDefinition, actionDef);
     }
 
     free(actionDefFormat1);
@@ -160,11 +153,11 @@ void encode_data_structure(const char* structure_name, const char* payload) {
     // Encode the ASN.1 data structure
     // Write encoded data to stdout
     char *copiedPayload = strdup(payload);
-    if (strcmp(structure_name, "E2SM_KPMv2_ActionDefinition") == 0) {
+    if (strcmp(structure_name, "E2SM_KPM_ActionDefinition") == 0) {
         const char *delimiter = ","; // this need to be consistent with the python part...
         int index = 0;
         int format;
-        long ricStyleType, granularityPeriod, subId;
+        long ricStyleType, granularityPeriod;
         char *cellObjID, *measList;
         char *token = strtok(copiedPayload, delimiter);
         while(token != NULL) {
@@ -176,15 +169,9 @@ void encode_data_structure(const char* structure_name, const char* payload) {
                     ricStyleType = atol(token);
                     break;
                 case 2:
-                    cellObjID = strdup(token);
-                    break;
-                case 3:
                     granularityPeriod = atol(token);
                     break;
-                case 4:
-                    subId = atol(token);
-                    break;
-                case 5:
+                case 3:
                     measList = strdup(token);
                     break;
                 default:
@@ -193,11 +180,11 @@ void encode_data_structure(const char* structure_name, const char* payload) {
             ++index;
             token = strtok(NULL, delimiter);
         }
-        if (index != 6) {
-            fprintf(stderr, "Incorrect arg num for encoding E2SM_KPMv2_ActionDefinition: %d\n", index);
+        if (index != 4) {
+            fprintf(stderr, "Incorrect arg num for encoding E2SM_KPM_ActionDefinition: %d\n", index);
             return;
         }
-        encode_action_definition(format, ricStyleType, cellObjID, granularityPeriod, subId, measList);
+        encode_action_definition(format, ricStyleType, granularityPeriod, measList);
     }
 
     free(copiedPayload);

@@ -108,8 +108,6 @@ int asn_INTEGER2long(const INTEGER_t *i, long *l);
 int asn_INTEGER2ulong(const INTEGER_t *i, unsigned long *l);
 int asn_long2INTEGER(INTEGER_t *i, long l);
 int asn_ulong2INTEGER(INTEGER_t *i, unsigned long l);
-int asn_INTEGER2int64(const INTEGER_t *i, int64_t *l);
-int asn_INTEGER2uint64(const INTEGER_t *i, uint64_t *l);
 int asn_int642INTEGER(INTEGER_t *i, int64_t l);
 int asn_uint642INTEGER(INTEGER_t *i, uint64_t l);
 

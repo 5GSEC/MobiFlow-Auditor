@@ -12,9 +12,9 @@
 #include "asn_application.h"
 
 /* Including external dependencies */
-#include "GlobalenGNB-ID.h"
-#include "GNB-CU-UP-ID.h"
-#include "GNB-DU-ID.h"
+#include "E2AP-IEs_GlobalenGNB-ID.h"
+#include "E2AP-IEs_GNB-CU-UP-ID.h"
+#include "E2AP-IEs_GNB-DU-ID.h"
 #include "constr_SEQUENCE.h"
 
 #ifdef __cplusplus
@@ -23,9 +23,9 @@ extern "C" {
 
 /* GlobalE2node-en-gNB-ID */
 typedef struct GlobalE2node_en_gNB_ID {
-	GlobalenGNB_ID_t	 global_en_gNB_ID;
-	GNB_CU_UP_ID_t	*en_gNB_CU_UP_ID;	/* OPTIONAL */
-	GNB_DU_ID_t	*en_gNB_DU_ID;	/* OPTIONAL */
+	E2AP_IEs_GlobalenGNB_ID_t	 global_en_gNB_ID;
+	E2AP_IEs_GNB_CU_UP_ID_t	*en_gNB_CU_UP_ID;	/* OPTIONAL */
+	E2AP_IEs_GNB_DU_ID_t	*en_gNB_DU_ID;	/* OPTIONAL */
 	/*
 	 * This type is extensible,
 	 * possible extensions are below.

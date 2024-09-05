@@ -12,7 +12,7 @@
 #include "asn_application.h"
 
 /* Including external dependencies */
-#include "GlobalENB-ID.h"
+#include "E2AP-IEs_GlobalENB-ID.h"
 #include "constr_SEQUENCE.h"
 
 #ifdef __cplusplus
@@ -21,7 +21,7 @@ extern "C" {
 
 /* GlobalE2node-eNB-ID */
 typedef struct GlobalE2node_eNB_ID {
-	GlobalENB_ID_t	 global_eNB_ID;
+	E2AP_IEs_GlobalENB_ID_t	 global_eNB_ID;
 	/*
 	 * This type is extensible,
 	 * possible extensions are below.

@@ -12,7 +12,7 @@
 #include "asn_application.h"
 
 /* Including external dependencies */
-#include "GNB-CU-UP-ID.h"
+#include "E2AP-IEs_GNB-CU-UP-ID.h"
 #include "constr_SEQUENCE.h"
 
 #ifdef __cplusplus
@@ -21,7 +21,7 @@ extern "C" {
 
 /* E2nodeComponentInterfaceE1 */
 typedef struct E2nodeComponentInterfaceE1 {
-	GNB_CU_UP_ID_t	 gNB_CU_CP_ID;
+	E2AP_IEs_GNB_CU_UP_ID_t	 gNB_CU_CP_ID;
 	/*
 	 * This type is extensible,
 	 * possible extensions are below.

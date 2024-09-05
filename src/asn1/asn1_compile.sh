@@ -4,7 +4,8 @@
 ASN1C="/opt/asn1c/bin/asn1c"
 
 # Define input ASN.1 files
-ASN_FILES="asn1/e2sm_kpm_v2.0.3-changed.asn asn1/e2ap_v2.asn1"
+# ASN_FILES="asn1/e2sm_kpm_v2.0.3-changed.asn asn1/e2ap_v2.asn1" # OAI modified version KPM
+ASN_FILES="asn1/e2sm_kpm_v2.0.03.asn asn1/e2sm_v3.00.asn asn1/e2ap_v2.asn1" # standard O-RAN KPM
 
 # Define output directory
 OUTPUT_DIR="src"
