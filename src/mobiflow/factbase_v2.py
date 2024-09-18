@@ -1,6 +1,6 @@
 import threading
 import logging
-from .mobiflow import *
+from .mobiflow_v2 import *
 from .encoding import *
 from .constant import *
 
@@ -12,7 +12,7 @@ class FactBase:
     def __init__(self):
         if not hasattr(self, 'initialized'):
             self.facts = {}
-            self.bs_id_counter = 0
+            self.nr_cell_id_counter = 0
             self.bs_name_map = {}
             self.initialized = True
 
@@ -31,12 +31,12 @@ class FactBase:
                 if ue.should_report:
                     write_should_end = False
                     # generate UE mobiflow record
-                    umf, prev_rrc, prev_nas, prev_sec, rrc, nas, sec = ue.generate_mobiflow()
+                    umf, prev_rrc, prev_nas, prev_rrc_sec, rrc, nas, sec = ue.generate_mobiflow()
                     mf_list.append(umf)
                     # update BS
-                    bs = self.get_bs(umf.bs_id)
+                    bs = self.get_bs(umf.nr_cell_id)
                     if bs is not None:
-                        bs.update_counters(prev_rrc, prev_nas, prev_sec, rrc, nas, sec)
+                        bs.update_counters(prev_rrc, prev_nas, prev_rrc_sec, rrc, nas, sec)
             for bs in self.get_all_bs():
                 if bs.should_report:
                     write_should_end = False
@@ -49,14 +49,14 @@ class FactBase:
 
     def add_bs(self, bs: BS):
         with self._lock:
-            if not self.facts.keys().__contains__(bs.bs_id):
+            if not self.facts.keys().__contains__(bs.nr_cell_id):
                 bs.ts = time.time() * 1000
-                bs.bs_id = self.bs_id_counter
-                self.bs_name_map[bs.name] = bs.bs_id
-                self.bs_id_counter += 1
-                self.facts[bs.bs_id] = bs
+                bs.nr_cell_id = self.nr_cell_id_counter
+                self.bs_name_map[bs.name] = bs.nr_cell_id
+                self.nr_cell_id_counter += 1
+                self.facts[bs.nr_cell_id] = bs
             else:
-                self.facts[bs.bs_id].ts = time.time()
+                self.facts[bs.nr_cell_id].ts = time.time()
 
     def add_ue(self, bsId, ue: UE):
         with self._lock:
@@ -65,7 +65,7 @@ class FactBase:
                 return
             else:
                 ue.ts = time.time() * 1000
-                ue.bs_id = bsId
+                ue.nr_cell_id = bsId
                 if self.facts[bsId] is not None:
                     self.facts[bsId].add_ue(ue)
 
@@ -120,20 +120,22 @@ class FactBase:
 
 
     def update_fact_base(self, kpm_measurement_dict: dict, me_id: str):
-        if int(kpm_measurement_dict["UE.RNTI"]) == 0:
+        if int(kpm_measurement_dict["gnb_du_ue_f1ap_id"]) == 0:
             return  # ignore empty indication records
 
         logging.info(f"[FactBase] KPM indication reported metrics: {kpm_measurement_dict}")
         # update fact base
         ue = UE()
-        ue.rnti = int(kpm_measurement_dict["UE.RNTI"])
-        ue.imsi = int(kpm_measurement_dict["UE.IMSI1"]) + (int(kpm_measurement_dict["UE.IMSI2"]) << 32)
-        ue.tmsi = int(kpm_measurement_dict["UE.M_TMSI"])
-        ue.rat = int(kpm_measurement_dict["UE.RAT"])
-        ue.cipher_alg = int(kpm_measurement_dict["UE.CIPHER_ALG"])
-        ue.integrity_alg = int(kpm_measurement_dict["UE.INTEGRITY_ALG"])
-        ue.emm_cause = int(kpm_measurement_dict["UE.EMM_CAUSE"])
-        msg_len = 20
+        ue.timestamp = int(kpm_measurement_dict["timestamp"])
+        ue.nr_cell_id = int(kpm_measurement_dict["nr_cell_id"])
+        ue.gnb_du_ue_f1ap_id = int(kpm_measurement_dict["gnb_du_ue_f1ap_id"])
+        ue.gnb_cu_ue_f1ap_id = int(kpm_measurement_dict["gnb_cu_ue_f1ap_id"])
+        ue.rnti = int(kpm_measurement_dict["rnti"])
+        ue.s_tmsi = int(kpm_measurement_dict["s_tmsi"])
+        ue.establish_cause = int(kpm_measurement_dict["establish_cause"])
+        ue.cipher_alg = int(kpm_measurement_dict["cipher_alg"])
+        ue.integrity_alg = int(kpm_measurement_dict["integrity_alg"])
+        msg_len = UE_MOBIFLOW_ITEM_LEN - UE_META_DATA_ITEM_LEN
         for i in range(1, msg_len+1):
             msg_val = int(kpm_measurement_dict[f"msg{i}"])
             if msg_val & 1 == 1:
@@ -141,7 +143,7 @@ class FactBase:
                 dcch = (msg_val >> 1) & 1
                 downlink = (msg_val >> 2) & 1
                 msg_id = (msg_val >> 3)
-                msg_name = decode_rrc_msg(dcch, downlink, msg_id, ue.rat)
+                msg_name = decode_rrc_msg(dcch, downlink, msg_id, 1)
                 if msg_name != "" and msg_name is not None:
                     ue.msg_trace.append(msg_name)
                 elif msg_id != 0:
@@ -150,7 +152,7 @@ class FactBase:
                 # NAS
                 dis = (msg_val >> 1) & 1
                 msg_id = (msg_val >> 2)
-                msg_name = decode_nas_msg(dis, msg_id, ue.rat)
+                msg_name = decode_nas_msg(dis, msg_id, 1)
                 if msg_name != "" and msg_name is not None:
                     ue.msg_trace.append(msg_name)
                 elif msg_id != 0:

@@ -31,7 +31,7 @@ class HWXapp:
 
     __XAPP_CONFIG_PATH = "/tmp/init/config-file.json"
     __XAPP_NAME = "mobiflow-auditor"
-    __XAPP_VERSION = "0.0.1"
+    __XAPP_VERSION = "0.0.3"
     __XAPP_NAME_SPACE = "ricxapp"
     __PLT_NAME_SPACE = "ricplt"
     __HTTP_PORT = 8080

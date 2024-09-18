@@ -1,13 +1,13 @@
 {
     "name": "mobiflow-auditor",
-    "version": "0.0.1",
+    "version": "0.0.3",
     "containers": [
         {
             "name": "mobiflow-auditor",
             "image": {
                 "registry": "127.0.0.1:5000",
                 "name": "mobiflow-auditor",
-                "tag": "0.0.1"
+                "tag": "0.0.3"
             }
         }
     ],

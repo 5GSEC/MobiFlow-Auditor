@@ -129,7 +129,7 @@ class SubscriptionManager(_BaseManager):
                     bs = BS()
                     fb = FactBase()
                     bs.name = me_id  # gnb_208_099_00000e00
-                    bs.bs_id = -1  # new BS
+                    bs.nr_cell_id = -1  # new BS
                     bs.mcc = me_id.split("_")[1]
                     bs.mnc = me_id.split("_")[2]
                     bs.cell_id = me_id.split("_")[3]

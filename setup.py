@@ -25,7 +25,7 @@ def read(fname):
 
 setup(
     name='mobiflow_auditor',
-    version='0.0.1',
+    version='0.0.3',
     packages=find_packages(),
     url='https://github.com/5GSEC/MobiFlow-Auditor',
     license='Apache 2.0',
