@@ -136,27 +136,58 @@ class FactBase:
         ue.cipher_alg = int(kpm_measurement_dict["cipher_alg"])
         ue.integrity_alg = int(kpm_measurement_dict["integrity_alg"])
         msg_len = UE_MOBIFLOW_ITEM_LEN - UE_META_DATA_ITEM_LEN
+
         for i in range(1, msg_len+1):
             msg_val = int(kpm_measurement_dict[f"msg{i}"])
-            if msg_val & 1 == 1:
-                # RRC
-                dcch = (msg_val >> 1) & 1
-                downlink = (msg_val >> 2) & 1
-                msg_id = (msg_val >> 3)
-                msg_name = decode_rrc_msg(dcch, downlink, msg_id, 1)
-                if msg_name != "" and msg_name is not None:
-                    ue.msg_trace.append(msg_name)
-                elif msg_id != 0:
-                    logging.error(f"[FactBase] Invalid RRC Msg dcch={dcch}, downlink={downlink} {msg_id}")
-            else:
-                # NAS
-                dis = (msg_val >> 1) & 1
-                msg_id = (msg_val >> 2)
-                msg_name = decode_nas_msg(dis, msg_id, 1)
-                if msg_name != "" and msg_name is not None:
-                    ue.msg_trace.append(msg_name)
-                elif msg_id != 0:
-                    logging.error(f"[FactBase] Invalid NAS Msg: discriminator={dis} {msg_id}")
+            rrc_msg_id = (msg_val >> 25) & 0x1F
+            dcch_ccch = (msg_val >> 24) & 0x01               # 1 bit
+            downlink_uplink = (msg_val >> 23) & 0x01         # 1 bit
+            nas_msg_id = (msg_val >> 17) & 0x3F              # 6 bits
+            emm_esm = (msg_val >> 16) & 0x01                 # 1 bit
+            rrc_state = (msg_val >> 14) & 0x03               # 2 bits
+            nas_state = (msg_val >> 12) & 0x03               # 2 bits
+            sec_state = (msg_val >> 10) & 0x03               # 2 bits
+            reserved_field_1 = (msg_val >> 8) & 0x03         # 2 bits
+            reserved_field_2 = (msg_val >> 6) & 0x03         # 2 bits
+            reserved_field_3 = (msg_val >> 4) & 0x03         # 2 bits
+            reserved_field_4 = (msg_val >> 2) & 0x03         # 2 bits
+            reserved_field_5 = msg_val & 0x03                # 2 bits
+
+            rrc_msg_name = decode_rrc_msg(dcch_ccch, downlink_uplink, rrc_msg_id, 1)
+            if rrc_msg_name != "" and rrc_msg_name is not None:
+                ue.msg_trace.append(rrc_msg_name)
+            elif rrc_msg_id != 0:
+                logging.error(f"[FactBase] Invalid RRC Msg dcch={dcch_ccch}, downlink={downlink_uplink} {rrc_msg_id}")
+
+            if emm_esm != 0:
+                nas_msg_id = nas_msg_id + list(nas_emm_code_NR.keys())[0] # add nas message offset
+                nas_msg_name = decode_nas_msg(emm_esm, nas_msg_id, 1)
+                if nas_msg_name != "" and nas_msg_name is not None:
+                    ue.msg_trace.append(nas_msg_name)
+                elif nas_msg_id != 0:
+                    logging.error(f"[FactBase] Invalid NAS Msg: discriminator={emm_esm} {nas_msg_id}")
+
+        # for i in range(1, msg_len+1):
+        #     msg_val = int(kpm_measurement_dict[f"msg{i}"])
+        #     if msg_val & 1 == 1:
+        #         # RRC
+        #         dcch = (msg_val >> 1) & 1
+        #         downlink = (msg_val >> 2) & 1
+        #         msg_id = (msg_val >> 3)
+        #         msg_name = decode_rrc_msg(dcch, downlink, msg_id, 1)
+        #         if msg_name != "" and msg_name is not None:
+        #             ue.msg_trace.append(msg_name)
+        #         elif msg_id != 0:
+        #             logging.error(f"[FactBase] Invalid RRC Msg dcch={dcch}, downlink={downlink} {msg_id}")
+        #     else:
+        #         # NAS
+        #         dis = (msg_val >> 1) & 1
+        #         msg_id = (msg_val >> 2)
+        #         msg_name = decode_nas_msg(dis, msg_id, 1)
+        #         if msg_name != "" and msg_name is not None:
+        #             ue.msg_trace.append(msg_name)
+        #         elif msg_id != 0:
+        #             logging.error(f"[FactBase] Invalid NAS Msg: discriminator={dis} {msg_id}")
 
         self.add_ue(self.get_bs_index_by_name(me_id), ue)
         

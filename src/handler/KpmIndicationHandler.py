@@ -6,7 +6,7 @@ from ..asn1 import AsnProxy
 from ..manager import SdlManager
 from ._BaseHandler import _BaseHandler
 from ..utils.utils import find_all_values
-from ..mobiflow import FactBase, UE, decode_rrc_msg, decode_nas_msg, UE_MOBIFLOW_NS, BS_MOBIFLOW_NS
+from ..mobiflow import UEMobiFlow, decode_rrc_msg, decode_nas_msg, UE_MOBIFLOW_NS, BS_MOBIFLOW_NS, parse_measurement_into_mobiflow
 
 class KpmIndicationHandler(_BaseHandler):
 
@@ -63,18 +63,24 @@ class KpmIndicationHandler(_BaseHandler):
         for i in range(len(kpm_measurement_values)):
             kpm_measurement_dict[kpm_measurement_names[i]] = kpm_measurement_values[i]
 
-        fb = FactBase()
-        fb.update_fact_base(kpm_measurement_dict, me_id)
-        mf_list = fb.update_mobiflow()
-        for mf in mf_list:
-            # store Mobiflow to SDL
-            self.logger.info(f"[FactBase] Storing MobiFlow record to SDL {mf.__str__()}")
-            if mf.msg_type == "UE":
-                self.sdl_mgr.store_data_to_sdl(UE_MOBIFLOW_NS, str(mf.msg_id), mf.__str__())
-            elif mf.msg_type == "BS":
-                self.sdl_mgr.store_data_to_sdl(BS_MOBIFLOW_NS, str(mf.msg_id), mf.__str__())
-            else:
-                raise NotImplementedError
+        # self.logger.info(f"KPM indication reported metrics: {kpm_measurement_dict}")
+
+        ue_mfs = parse_measurement_into_mobiflow(kpm_measurement_dict)
+        for mf in ue_mfs:
+            self.logger.info(mf.__str__())
+
+        # fb = FactBase()
+        # fb.update_fact_base(kpm_measurement_dict, me_id)
+        # mf_list = fb.update_mobiflow()
+        # for mf in mf_list:
+        #     # store Mobiflow to SDL
+        #     self.logger.info(f"[FactBase] Storing MobiFlow record to SDL {mf.__str__()}")
+        #     if mf.msg_type == "UE":
+        #         self.sdl_mgr.store_data_to_sdl(UE_MOBIFLOW_NS, str(mf.msg_id), mf.__str__())
+        #     elif mf.msg_type == "BS":
+        #         self.sdl_mgr.store_data_to_sdl(BS_MOBIFLOW_NS, str(mf.msg_id), mf.__str__())
+        #     else:
+        #         raise NotImplementedError
 
         # try:
         #     req = json.loads(summary[rmr.RMR_MS_PAYLOAD])  # input should be a json encoded as bytes

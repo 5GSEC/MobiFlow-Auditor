@@ -216,7 +216,7 @@ def decode_nas_msg(dis: int, msg_id: int, rat: int) -> str:
             # TODO implement ESM
             return ""
     elif rat == 1:  # NR
-        if dis == 0:  # EMM = 0x7e & 1 = 0
+        if dis == 1:
             return nas_emm_code_NR.get(msg_id)
         else:
             # TODO implement ESM

@@ -7,5 +7,5 @@ if mobiflow_ver == "v1":
     from .mobiflow import UE, BS, UEMobiFlow, BSMobiFlow
     from .factbase import FactBase
 elif mobiflow_ver == "v2":
-    from .mobiflow_v2 import UE, BS, UEMobiFlow, BSMobiFlow
+    from .mobiflow_v2 import UE, BS, UEMobiFlow, BSMobiFlow, parse_measurement_into_mobiflow
     from .factbase_v2 import FactBase

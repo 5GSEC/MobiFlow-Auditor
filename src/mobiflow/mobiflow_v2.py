@@ -1,5 +1,9 @@
 import time
+import logging
+import copy
 from enum import Enum
+from typing import List
+from .encoding import *
 
 def get_time_ms():
     return time.time() * 1000
@@ -54,38 +58,44 @@ GENERATOR_NAME = "SECSM"
 UE_MOBIFLOW_ID_COUNTER = 0
 BS_MOBIFLOW_ID_COUNTER = 0
 MOBIFLOW_DELIMITER = ";"
-UE_META_DATA_ITEM_LEN = 9
-UE_MOBIFLOW_ITEM_LEN = 30
+UE_META_DATA_ITEM_LEN = 0
+UE_MOBIFLOW_ITEM_LEN = 0
 
 ###################### MobiFlow Structures ######################
 
 class UEMobiFlow:
     def __init__(self):
-        self.msg_type = "UE"            # Msg hdr  - mobiflow type [UE, BS]
-        self.msg_id = 0                 # Msg hdr  - unique mobiflow event ID
-        self.timestamp = 0              # Msg hdr  - timestamp (ms)
+        self.msg_type = "UE"                        # Msg hdr  - mobiflow type [UE, BS]
+        self.msg_id = 0                             # Msg hdr  - unique mobiflow event ID
         self.mobiflow_ver = MOBIFLOW_VERSION        # Msg hdr  - version of Mobiflow
         self.generator_name = GENERATOR_NAME        # Msg hdr  - generator name (e.g., SECSM)
         #####################################################################
+        self.timestamp = 0              # UE meta  - timestamp (ms)
         self.nr_cell_id = 0             # UE meta  - NR (5G) basestation id
         self.gnb_cu_ue_f1ap_id = 0      # UE meta  - UE id identified by gNB CU F1AP
         self.gnb_du_ue_f1ap_id = 0      # UE meta  - UE id identified by gNB DU F1AP
         self.rnti = 0                   # UE meta  - ue rnti
         self.s_tmsi = 0                 # UE meta  - ue s-tmsi
+        self.cipher_alg = 0             # UE packet telemetry  - cipher algorithm
+        self.integrity_alg = 0          # UE packet telemetry  - integrity algorithm
+        self.establish_cause = 0        # UE packet telemetry  - establishment cause
         #####################################################################
-        self.cipher_alg = 0             # UE stats  - cipher algorithm
-        self.integrity_alg = 0          # UE stats  - integrity algorithm
-        self.establish_cause = 0        # UE stats  - establishment cause
-        self.msg = ""                   # UE stats  - RRC/NAS message
-        self.rrc_state = 0              # UE stats  - RRC state       [INACTIVE, RRC_IDLE, RRC_CONNECTED, RRC_RECONFIGURED]
-        self.nas_state = 0              # UE stats  - NAS state (EMM) [EMM_DEREGISTERED, EMM_REGISTER_INIT, EMM_REGISTERED]
-        self.rrc_sec_state = 0          # UE stats  - security state  [SEC_CONTEXT_NOT_EXIST, SEC_CONTEXT_EXIST]
-        self.emm_cause = 0              # UE stats  - EMM cause code
+        self.rrc_msg = ""               # UE packet-agnostic telemetry  - RRC message
+        self.nas_msg = ""               # UE packet-agnostic telemetry  - NAS message
+        self.rrc_state = 0              # UE packet-agnostic telemetry  - RRC state       [INACTIVE, RRC_IDLE, RRC_CONNECTED, RRC_RECONFIGURED]
+        self.nas_state = 0              # UE packet-agnostic telemetry  - NAS state (EMM) [EMM_DEREGISTERED, EMM_REGISTER_INIT, EMM_REGISTERED]
+        self.rrc_sec_state = 0          # UE packet-agnostic telemetry  - security state  [SEC_CONTEXT_NOT_EXIST, SEC_CONTEXT_EXIST]
         #####################################################################
-        self.rrc_initial_timer = 0      # UE timer  -
-        self.rrc_inactive_timer = 0     # UE timer  -
-        self.nas_initial_timer = 0      # UE timer  -
-        self.nas_inactive_timer = 0     # UE timer  -
+        self.reserved_field_1 = 0       # UE packet-specific telemetry
+        self.reserved_field_2 = 0       # UE packet-specific telemetry
+        self.reserved_field_3 = 0       # UE packet-specific telemetry
+        self.reserved_field_4 = 0       # UE packet-specific telemetry
+        self.reserved_field_5 = 0       # UE packet-specific telemetry
+        #####################################################################
+        # self.rrc_initial_timer = 0      # UE timer  -
+        # self.rrc_inactive_timer = 0     # UE timer  -
+        # self.nas_initial_timer = 0      # UE timer  -
+        # self.nas_inactive_timer = 0     # UE timer  -
 
     def __str__(self):
         attrs = []
@@ -95,6 +105,10 @@ class UEMobiFlow:
             else:
                 attrs.append(str(a))
         return MOBIFLOW_DELIMITER.join(attrs)
+    
+    def copy(self):
+        # Return a deep copy of the current object
+        return copy.deepcopy(self)
 
 class BSMobiFlow:
     def __init__(self):
@@ -129,7 +143,6 @@ class BSMobiFlow:
 
 
 ###################### SECSM Structures ######################
-
 class UE:
     def __init__(self) -> None:
         #### UE Meta ####
@@ -278,7 +291,6 @@ class UE:
             self.should_report = False
         return umf, prev_rrc, prev_nas, prev_rrc_sec, rrc, nas, sec
 
-
 class BS:
     def __init__(self) -> None:
         ####  BS Meta ####
@@ -366,4 +378,82 @@ class BS:
         return bmf
 
 
+def parse_measurement_into_mobiflow(kpm_measurement_dict: dict) -> List[UEMobiFlow]:
+    mfs = []
+    kpm_keys = kpm_measurement_dict.keys()
 
+    if "gnb_du_ue_f1ap_id" in kpm_keys and int(kpm_measurement_dict["gnb_du_ue_f1ap_id"]) == 0:
+        return mfs # ignore empty indication records
+    
+    global UE_META_DATA_ITEM_LEN, UE_MOBIFLOW_ITEM_LEN
+    if UE_META_DATA_ITEM_LEN == 0 and UE_MOBIFLOW_ITEM_LEN == 0:
+        # initialize Meta values
+        UE_MOBIFLOW_ITEM_LEN = len(kpm_measurement_dict.keys())
+        for k in kpm_keys:
+            if not k.startswith("msg"):
+                UE_META_DATA_ITEM_LEN = UE_META_DATA_ITEM_LEN + 1
+
+    msg_len = UE_MOBIFLOW_ITEM_LEN - UE_META_DATA_ITEM_LEN
+
+    # populate MobiFlow telemetry
+    mf = UEMobiFlow()
+    if "timestamp" in kpm_keys: 
+        mf.timestamp = int(kpm_measurement_dict["timestamp"]) 
+    if "nr_cell_id" in kpm_keys:
+        mf.nr_cell_id = int(kpm_measurement_dict["nr_cell_id"])
+    if "gnb_du_ue_f1ap_id" in kpm_keys:
+        mf.gnb_du_ue_f1ap_id = int(kpm_measurement_dict["gnb_du_ue_f1ap_id"])
+    if "gnb_cu_ue_f1ap_id" in kpm_keys:
+        mf.gnb_cu_ue_f1ap_id = int(kpm_measurement_dict["gnb_cu_ue_f1ap_id"])
+    if "rnti" in kpm_keys:
+        mf.rnti = int(kpm_measurement_dict["rnti"])
+    if "s_tmsi" in kpm_keys:
+        mf.s_tmsi = int(kpm_measurement_dict["s_tmsi"])
+    if "establish_cause" in kpm_keys:
+        mf.establish_cause = int(kpm_measurement_dict["establish_cause"])
+    if "cipher_alg" in kpm_keys:
+        mf.cipher_alg = int(kpm_measurement_dict["cipher_alg"])
+    if "integrity_alg" in kpm_keys:
+        mf.integrity_alg = int(kpm_measurement_dict["integrity_alg"])
+    for i in range(1, msg_len+1):
+        mf = mf.copy() # one MobiFlow entry per packet
+        msg_val = int(kpm_measurement_dict[f"msg{i}"])
+        if msg_val == 0:
+            continue
+        rrc_msg_id = (msg_val >> 25) & 0x1F
+        dcch_ccch = (msg_val >> 24) & 0x01               # 1 bit
+        downlink_uplink = (msg_val >> 23) & 0x01         # 1 bit
+        nas_msg_id = (msg_val >> 17) & 0x3F              # 6 bits
+        emm_esm = (msg_val >> 16) & 0x01                 # 1 bit
+        mf.rrc_state = (msg_val >> 14) & 0x03               # 2 bits
+        mf.nas_state = (msg_val >> 12) & 0x03               # 2 bits
+        mf.rrc_sec_state = (msg_val >> 10) & 0x03           # 2 bits
+        mf.reserved_field_1 = (msg_val >> 8) & 0x03         # 2 bits
+        mf.reserved_field_2 = (msg_val >> 6) & 0x03         # 2 bits
+        mf.reserved_field_3 = (msg_val >> 4) & 0x03         # 2 bits
+        mf.reserved_field_4 = (msg_val >> 2) & 0x03         # 2 bits
+        mf.reserved_field_5 = msg_val & 0x03                # 2 bits
+
+        rrc_msg_name = decode_rrc_msg(dcch_ccch, downlink_uplink, rrc_msg_id, 1)
+        if rrc_msg_name != "" and rrc_msg_name is not None:
+            mf.rrc_msg = rrc_msg_name
+        elif rrc_msg_id != 0:
+            mf.rrc_msg = ""
+            logging.error(f"[MobiFlow] Invalid RRC Msg dcch={dcch_ccch}, downlink={downlink_uplink} {rrc_msg_id}")
+
+        if emm_esm != 0:
+            # EMM message
+            nas_msg_id = nas_msg_id + list(nas_emm_code_NR.keys())[0] # add nas message offset
+            nas_msg_name = decode_nas_msg(emm_esm, nas_msg_id, 1)
+            if nas_msg_name != "" and nas_msg_name is not None:
+                mf.nas_msg = nas_msg_name
+            elif nas_msg_id != 0:
+                logging.error(f"[MobiFlow] Invalid NAS Msg: discriminator={emm_esm} {nas_msg_id}")
+                mf.nas_msg = ""
+        else:
+            # not EMM message
+            mf.nas_msg = ""
+        
+        mfs.append(mf)
+
+    return mfs
