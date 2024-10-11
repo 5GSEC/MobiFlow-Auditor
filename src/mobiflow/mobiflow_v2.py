@@ -76,8 +76,10 @@ class UEMobiFlow:
         self.gnb_du_ue_f1ap_id = 0      # UE meta  - UE id identified by gNB DU F1AP
         self.rnti = 0                   # UE meta  - ue rnti
         self.s_tmsi = 0                 # UE meta  - ue s-tmsi
-        self.cipher_alg = 0             # UE packet telemetry  - cipher algorithm
-        self.integrity_alg = 0          # UE packet telemetry  - integrity algorithm
+        self.rrc_cipher_alg = 0         # UE packet telemetry  - rrc cipher algorithm
+        self.rrc_integrity_alg = 0      # UE packet telemetry  - rrc integrity algorithm
+        self.nas_cipher_alg = 0         # UE packet telemetry  - nas cipher algorithm
+        self.nas_integrity_alg = 0      # UE packet telemetry  - nas integrity algorithm
         self.establish_cause = 0        # UE packet telemetry  - establishment cause
         #####################################################################
         self.rrc_msg = ""               # UE packet-agnostic telemetry  - RRC message
@@ -89,8 +91,6 @@ class UEMobiFlow:
         self.reserved_field_1 = 0       # UE packet-specific telemetry
         self.reserved_field_2 = 0       # UE packet-specific telemetry
         self.reserved_field_3 = 0       # UE packet-specific telemetry
-        self.reserved_field_4 = 0       # UE packet-specific telemetry
-        self.reserved_field_5 = 0       # UE packet-specific telemetry
         #####################################################################
         # self.rrc_initial_timer = 0      # UE timer  -
         # self.rrc_inactive_timer = 0     # UE timer  -
@@ -153,8 +153,10 @@ class UE:
         self.rnti = 0
         self.s_tmsi = 0
         #### UE Attributes ####
-        self.cipher_alg = 0
-        self.integrity_alg = 0
+        self.rrc_cipher_alg = 0
+        self.rrc_integrity_alg = 0
+        self.nas_cipher_alg = 0
+        self.nas_integrity_alg = 0
         self.establish_cause = 0
         self.rrc_state = RRCState.INACTIVE
         self.nas_state = EMMState.EMM_DEREGISTERED
@@ -171,27 +173,6 @@ class UE:
         # UE mobiflow report criteria: report new msg
         self.should_report = True     # indicate whether the UE state has changed and should be reported
         self.last_ts = 0              # indicate timestamp last time the UE is updated
-
-    def update(self, ur) -> bool:
-        if isinstance(ur, UE):
-            if len(ur.msg_trace) != 0:
-                self.msg_trace = self.msg_trace + ur.msg_trace
-                self.should_report = True
-            if self.s_tmsi != ur.s_tmsi:
-                self.s_tmsi = ur.s_tmsi
-                self.should_report = True
-            if self.establish_cause != ur.establish_cause:
-                self.establish_cause = ur.establish_cause
-                self.should_report = True
-            if self.cipher_alg != ur.cipher_alg:
-                self.cipher_alg = ur.cipher_alg
-                self.should_report = True
-            if self.integrity_alg != ur.integrity_alg:
-                self.integrity_alg = ur.integrity_alg
-                self.should_report = True
-            return True
-        else:
-            return False
 
     def __str__(self) -> str:
         s = "UE: {gnb_du_ue_f1ap_id: %s, rnti: %s, s_tmsi: %s}\n" % (self.gnb_du_ue_f1ap_id, hex(self.rnti), hex(self.s_tmsi))
@@ -318,7 +299,6 @@ class BS:
         for u in self.ue:
             if u.__eq__(ur):
                 u.last_ts = get_time_ms()
-                u.update(ur)
                 return
 
         # add new UE
@@ -411,28 +391,30 @@ def parse_measurement_into_mobiflow(kpm_measurement_dict: dict) -> List[UEMobiFl
         mf.s_tmsi = int(kpm_measurement_dict["s_tmsi"])
     if "establish_cause" in kpm_keys:
         mf.establish_cause = int(kpm_measurement_dict["establish_cause"])
-    if "cipher_alg" in kpm_keys:
-        mf.cipher_alg = int(kpm_measurement_dict["cipher_alg"])
-    if "integrity_alg" in kpm_keys:
-        mf.integrity_alg = int(kpm_measurement_dict["integrity_alg"])
+    if "rrc_cipher_alg" in kpm_keys:
+        mf.rrc_cipher_alg = int(kpm_measurement_dict["rrc_cipher_alg"])
+    if "rrc_integrity_alg" in kpm_keys:
+        mf.rrc_integrity_alg = int(kpm_measurement_dict["rrc_integrity_alg"])
+    if "nas_cipher_alg" in kpm_keys:
+        mf.nas_cipher_alg = int(kpm_measurement_dict["nas_cipher_alg"])
+    if "nas_integrity_alg" in kpm_keys:
+        mf.nas_integrity_alg = int(kpm_measurement_dict["nas_integrity_alg"])
     for i in range(1, msg_len+1):
         mf = mf.copy() # one MobiFlow entry per packet
         msg_val = int(kpm_measurement_dict[f"msg{i}"])
         if msg_val == 0:
             continue
-        rrc_msg_id = (msg_val >> 25) & 0x1F
-        dcch_ccch = (msg_val >> 24) & 0x01               # 1 bit
-        downlink_uplink = (msg_val >> 23) & 0x01         # 1 bit
-        nas_msg_id = (msg_val >> 17) & 0x3F              # 6 bits
-        emm_esm = (msg_val >> 16) & 0x01                 # 1 bit
-        mf.rrc_state = (msg_val >> 14) & 0x03               # 2 bits
-        mf.nas_state = (msg_val >> 12) & 0x03               # 2 bits
-        mf.rrc_sec_state = (msg_val >> 10) & 0x03           # 2 bits
-        mf.reserved_field_1 = (msg_val >> 8) & 0x03         # 2 bits
-        mf.reserved_field_2 = (msg_val >> 6) & 0x03         # 2 bits
-        mf.reserved_field_3 = (msg_val >> 4) & 0x03         # 2 bits
-        mf.reserved_field_4 = (msg_val >> 2) & 0x03         # 2 bits
-        mf.reserved_field_5 = msg_val & 0x03                # 2 bits
+        rrc_msg_id = (msg_val >> 27) & 0x1F
+        dcch_ccch = (msg_val >> 26) & 0x01               # 1 bit
+        downlink_uplink = (msg_val >> 25) & 0x01         # 1 bit
+        nas_msg_id = (msg_val >> 19) & 0x3F              # 6 bits
+        emm_esm = (msg_val >> 18) & 0x01                 # 1 bit
+        mf.rrc_state = (msg_val >> 16) & 0x03               # 2 bits
+        mf.nas_state = (msg_val >> 14) & 0x03               # 2 bits
+        mf.rrc_sec_state = (msg_val >> 12) & 0x03           # 2 bits
+        mf.reserved_field_1 = (msg_val >> 8) & 0x0F         # 4 bits
+        mf.reserved_field_2 = (msg_val >> 4) & 0x0F         # 4 bits
+        mf.reserved_field_3 = (msg_val) & 0x0F              # 4 bits
 
         rrc_msg_name = decode_rrc_msg(dcch_ccch, downlink_uplink, rrc_msg_id, 1)
         if rrc_msg_name != "" and rrc_msg_name is not None:

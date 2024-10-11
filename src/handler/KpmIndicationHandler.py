@@ -63,7 +63,7 @@ class KpmIndicationHandler(_BaseHandler):
         for i in range(len(kpm_measurement_values)):
             kpm_measurement_dict[kpm_measurement_names[i]] = kpm_measurement_values[i]
 
-        # self.logger.info(f"KPM indication reported metrics: {kpm_measurement_dict}")
+        self.logger.info(f"KPM indication reported metrics: {kpm_measurement_dict}")
 
         ue_mfs = parse_measurement_into_mobiflow(kpm_measurement_dict)
         for mf in ue_mfs:

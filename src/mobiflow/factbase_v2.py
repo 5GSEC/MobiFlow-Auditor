@@ -133,7 +133,7 @@ class FactBase:
         ue.rnti = int(kpm_measurement_dict["rnti"])
         ue.s_tmsi = int(kpm_measurement_dict["s_tmsi"])
         ue.establish_cause = int(kpm_measurement_dict["establish_cause"])
-        ue.cipher_alg = int(kpm_measurement_dict["cipher_alg"])
+        ue.rrc_cipher_alg = int(kpm_measurement_dict["rrc_cipher_alg"])
         ue.integrity_alg = int(kpm_measurement_dict["integrity_alg"])
         msg_len = UE_MOBIFLOW_ITEM_LEN - UE_META_DATA_ITEM_LEN
 
