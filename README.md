@@ -9,19 +9,23 @@ SPDX-License-Identifier: Apache-2.0
 
 MobiFlow Auditor is an O-RAN compliant xApp aiming to support ***fine-grained and security-aware statistics monitoring over the RAN data plane***, which is not solved by the default O-RAN standard and service models. We abstract such telemetry streams as **MobiFlow**, a novel security audit trail for holding mobile devices accountable during the link and session setup protocols as they interact with the base station, and interval statistics generated for tracking large-scale patterns of abuse against the base station.
 
-MobiFlow Auditor can drive various analyses. For example, it can drive expert system analysis with [MobiExpert](https://github.com/5GSEC/MobieXpert). MobiExpert xApp allows network operators to program stateful production-based IDS rules for detecting a wide range of cellular L3 attacks. It features the Production-Based Expert System Toolset ([P-BEST](https://ieeexplore.ieee.org/document/766911)) language. MobiFlow Auditor can also drive AI / ML-based analytics. 
+MobiFlow Auditor can drive various analyses. For example, it can drive expert system analysis with [MobiExpert](https://github.com/5GSEC/MobieXpert). MobiExpert xApp allows network operators to program stateful production-based IDS rules for detecting a wide range of cellular L3 attacks. It features the Production-Based Expert System Toolset ([P-BEST](https://ieeexplore.ieee.org/document/766911)) language. MobiFlow Auditor can also drive AI / ML-based analytics, such as [MobiWatch](https://github.com/5GSEC/MobiWatch) that uses unsupervised deep learning to detect layer-3 anomalies from 5G network traffic.
 
 To learn more about the format and structure of MobiFlow, please refer to our papers:
 
 - [A Fine-Grained Telemetry Stream for Security Services in 5G Open Radio Access Networks](https://dl.acm.org/doi/abs/10.1145/3565474.3569070) (EmergingWireless'22)
 - [5G-Spector: An O-RAN Compliant Layer-3 Cellular Attack Detection Service](https://web.cse.ohio-state.edu/~wen.423/papers/5G-Spector-NDSS24.pdf) (NDSS'24)
 
+MobiFlow Auditor's current implementation is dedicated for the [OSC RIC](https://wiki.o-ran-sc.org/display/ORAN). It is developed based on the [OSC RIC's python SDK](https://github.com/o-ran-sc/ric-plt-xapp-frame-py). Our running example below shows how to setup a 5G network based on the [OpenAirInterface5G](https://gitlab.eurecom.fr/oai/openairinterface5g/) project.
+
+
+We also have an old version at branch `main` implemented for the [ONOS RIC](https://docs.onosproject.org/v0.6.0/onos-cli/docs/cli/onos_ric/) on [SD-RAN](https://docs.sd-ran.org/master/index.html). It was used as part of the [5G-Spector](https://github.com/5GSEC/5G-Spector) artifact but not recommended any more since the ONOS RIC xApp python SDK is no longer being maintained.
 
 
 
 ## Prerequisite
 
-MobiFlow-Auditor is built as a Docker container. Refer to the official tutorial (https://docs.docker.com/engine/install/) to install and set up the Docker environment.
+MobiFlow-Auditor is built from source as a local Docker container. Refer to the official tutorial (https://docs.docker.com/engine/install/) to install and set up the Docker environment.
 
 Create a local docker registry to host docker images: 
 
@@ -29,26 +33,17 @@ Create a local docker registry to host docker images:
 sudo docker run -d -p 5000:5000 --restart=always --name registry registry:2
 ```
 
-## Architecture
-
-The current implementation of MobiFlow Auditor is dedicated to the [ONOS RIC](https://docs.onosproject.org/v0.6.0/onos-cli/docs/cli/onos_ric/) on [SD-RAN](https://docs.sd-ran.org/master/index.html) and OpenAirInterface5G (https://gitlab.eurecom.fr/oai/openairinterface5g/).
-
-Its communication with the RAN nodes (via E2) is based on the [ONOS RIC's python SDK](https://github.com/onosproject/onos-ric-sdk-py) and guidance from the exemplar [ONOS RAN Intelligent Controller xApps](https://github.com/onosproject/onos-ric-python-apps/) authored in Python programming language.
-
-MobiFlow Auditor's data can be accessed by other analytic xApps through [gRPC](https://grpc.io/docs/languages/python/). The RPC API definitions can be found at [mobiflow_service.proto](https://github.com/5GSEC/MobiFlow-Auditor/blob/main/mobiflow-auditor/secsm/rpc/protos/mobiflow_service.proto).
-
-
 
 ## MobiFlow Structure
 
-The current MobiFlow message definition is defined in [mobiflow.py](https://github.com/5GSEC/MobiFlow-Auditor/blob/main/mobiflow-auditor/secsm/mobiflow/mobiflow.py). It mainly collects (1) the fine-grained layer-3 (RRC and NAS) state transition information of UEs at the message level; (2) the aggregated flow-based statistics from the base stations.
+The current MobiFlow message definition is defined in [mobiflow.py](./src/mobiflow/mobiflow.py#L60). It mainly collects (1) the fine-grained layer-3 (RRC and NAS) state transition information of UEs at the message level; (2) the aggregated flow-based statistics from the base stations. The MobiFlow telemetry report process is based on the E2SM-KPM (v2.0) service model (SM). 
 
-The MobiFlow telemetry report process is based on the E2SM-KPM (v2.0) service model (SM). The E2SM implementation can be found at https://github.com/onosproject/onos-e2-sm.
-
-MobiFlow Auditor xApp requires O-RAN compliant RAN nodes to collect and report corresponding data. We have augmented the OpenAirInterface with MobiFlow telemetry support at [https://github.com/onehouwong/OAI-5G](https://github.com/5GSEC/OAI-5G) branch `2023.w23.secsm.sdran`.
+MobiFlow Auditor xApp requires O-RAN compliant RAN nodes to collect and report corresponding data. We have augmented the OpenAirInterface project with MobiFlow telemetry support at [https://github.com/onehouwong/OAI-5G](https://github.com/5GSEC/OAI-5G) branch `v2.1.0.secsm.osc`.
 
 
 ## Build the MobiFlow-Auditor xApp
+
+Simply run our build script:
 
 ```
 ./build.sh
@@ -58,67 +53,121 @@ After a successful build, the xApp will be compiled as a standalone Docker conta
 
 ```
 $ docker images
-REPOSITORY                           TAG       IMAGE ID       CREATED          SIZE
-localhost:5000/mobiflow-auditor      latest    4842d1672817   26 minutes ago   218MB
+REPOSITORY                         TAG       IMAGE ID       CREATED          SIZE
+localhost:5000/mobiflow-auditor    0.0.1     c6312eb0d32e   2 minutes ago    237M
 ```
 
 
-## Install the MobiFlow-Auditor xApp
+## Install / Uninstall the MobiFlow-Auditor xApp
 
-We have provided a default helm chart for deploying MobiFlow-Auditor on the ONOS RIC via [Kubernetes](https://kubernetes.io/) and [Helm](https://helm.sh/).
+First, onboard the xApp. You need to set up the proper environment with the `dms_cli` tool. Follow the instructions [here](https://github.com/5GSEC/5G-Spector/wiki/O%E2%80%90RAN-SC-RIC-Deployment-Guide) to install the tool. 
+
+Then execute the following to onboard the xApp:
 
 ```
-./install_xapp.sh
+cd init
+sudo -E dms_cli onboard --config_file_path=config-file.json --shcema_file_path=schema.json
+```
+
+Then, simply run the script to deploy the xApp under the `ricxapp` K8S namespace in the nRT-RIC.
+
+```
+cd ..
+./deploy.sh
 ```
 
 Make sure the xApp is up and running:
 
 ```
-$ kubectl get pods -n riab
+$ kubectl get pods -n ricxapp
 NAME                                READY   STATUS    RESTARTS   AGE
-mobiflow-auditor-68d598d7fb-vhlqw   3/3     Running   0          4m10s
+mobiflow-auditor-68d598d7fb-vhlqw   1/1     Running   0          4m10s
 ...
 ```
 
-## Example output
+If you wish to undeploy the MobiFlow-Auditor xApp from Kubernetes, run:
+
+```
+./undeploy.sh
+```
+
+## Running Example
+
+The below running example shows how to use the MobiFlow Auditor xApp to capture security telemetry from a live 5G network and stores the telemetry into the SDL database.
+
+Before running, make sure the OSC nRT-RIC is deployed by following this [tutorial](https://github.com/5GSEC/5G-Spector/wiki/O%E2%80%90RAN-SC-RIC-Deployment-Guide#deploy-the-osc-near-rt-ric).
+
+Next, deploy the OAI gNB that connects to the nRT-RIC through the E2 interface. You can refer to our [tutorial](https://github.com/5GSEC/5G-Spector/wiki/O%E2%80%90RAN-SC-RIC-Deployment-Guide#connect-oai-gnb-to-osc-ric) to deploy the OAI gNB which is extended with the E2 agent we have implemented. Ensure the gNB is up and connected to the RIC.
+
+
+Run the MobiFlow Auditor xApp (assuming the image has been built):
+
+```
+./deploy.sh
+```
+
+Finally, run the OAI nrUE (or a commercial UE) to attach to the gNB and generate 5G traffic. We have provided instructions on how to run the OAI UE at this [link](https://github.com/5GSEC/5G-Spector/wiki/O%E2%80%90RAN-SC-RIC-Deployment-Guide#run-oai-ue).
+
 
 By running the MobiFlow Auditor on the RIC along with an OAI gNB and nrUE, MobiFlow Auditor will generate and store MobiFlow telemetry. You can check the run-time logs with:
 
+
 ```
-$ kubectl logs mobiflow-auditor-68d598d7fb-vhlqw -n riab -c mobiflow-auditor
-INFO 2024-02-25 19:22:02 web_log.py:206] 192.168.121.113 [25/Feb/2024:19:22:02 +0000] "GET /status HTTP/1.1" 200 180 "-" "kube-probe/1.23"
-INFO 2024-02-25 19:22:02 web_log.py:206] 192.168.121.113 [25/Feb/2024:19:22:02 +0000] "GET /status HTTP/1.1" 200 180 "-" "kube-probe/1.23"
-INFO 2024-02-25 19:22:02 onos_ric_secsm.py:70] MobiFlow update async coroutine started
-INFO 2024-02-25 19:22:03 onos_ric_secsm.py:113] Adding new BS: e2:1/e00_e0000
-INFO 2024-02-25 19:22:03 mobiflow_writer.py:178] [MobiFlow] Writing BS Mobiflow to DB:
-INSERT INTO bs_mobiflow
-	(msg_type, msg_id, timestamp, mobiflow_ver, generator_name, bs_id, mcc, mnc, tac, cell_id, report_period, connected_ue_cnt, idle_ue_cnt, max_ue_cnt, initial_timer, inactive_timer)
-VALUES
-	('BS', 0, 1708888923085.3403, 'v2.0', 'SECSM', 0, 0, 0, 0, 'e0000', 1000, 0, 0, 0, 1708888923008.0066, 0);
-......
-INFO 2024-02-25 19:22:36 mobiflow_writer.py:171] [MobiFlow] Writing UE Mobiflow to DB:
-INSERT INTO ue_mobiflow
-	(msg_type, msg_id, timestamp, mobiflow_ver, generator_name, bs_id, rnti, tmsi, imsi, imei, cipher_alg, integrity_alg, establish_cause, msg, rrc_state, nas_state, sec_state, emm_cause, rrc_initial_timer, rrc_inactive_timer, nas_initial_timer, nas_inactive_timer)
-VALUES
-	('UE', 0, 1708888956723.8171, 'v2.0', 'SECSM', 0, 8873, 0, 0, 0, 2, 2, 3, 'RRCSetupRequest', 0, 0, 0, 0, 0, 0, 0, 0),
-	('UE', 1, 1708888956724.1287, 'v2.0', 'SECSM', 0, 8873, 0, 0, 0, 2, 2, 3, 'RRCSetup', 2, 0, 0, 0, 1708888956721.8125, 0, 0, 0),
-	('UE', 2, 1708888956725.1716, 'v2.0', 'SECSM', 0, 8873, 0, 0, 0, 2, 2, 3, 'RRCSetupComplete', 2, 0, 0, 0, 1708888956721.8125, 0, 0, 0),
-	('UE', 3, 1708888956725.2183, 'v2.0', 'SECSM', 0, 8873, 0, 0, 0, 2, 2, 3, 'Registrationrequest', 2, 1, 0, 0, 1708888956721.8125, 0, 1708888956721.8125, 0),
-	('UE', 4, 1708888956725.5933, 'v2.0', 'SECSM', 0, 8873, 0, 0, 0, 2, 2, 3, 'Authenticationrequest', 2, 1, 0, 0, 1708888956721.8125, 0, 1708888956721.8125, 0),
-	('UE', 5, 1708888956725.6362, 'v2.0', 'SECSM', 0, 8873, 0, 0, 0, 2, 2, 3, 'Authenticationresponse', 2, 1, 0, 0, 1708888956721.8125, 0, 1708888956721.8125, 0),
+./log.sh
+```
+
+Example log entries:
+
+```
+{"ts": 1729716349154, "crit": "INFO", "id": "ricxappframe.xapp_frame", "mdc": {}, "msg": "[MobiFlow] Storing MobiFlow record to SDL UE;0;1729716349154.052;v2.0;SECSM;0;60786;1450744508;0;0;0;0;0;RRCSetupRequest;0;0;0;0;0;0;0;0"}
+{"ts": 1729716349155, "crit": "INFO", "id": "ricxappframe.xapp_frame", "mdc": {}, "msg": "[MobiFlow] Storing MobiFlow record to SDL UE;1;1729716349154.0964;v2.0;SECSM;0;60786;1450744508;0;0;0;0;0;RRCSetup;2;0;0;0;1729716349154.0103;0;0;0"}
+{"ts": 1729716349155, "crit": "INFO", "id": "ricxappframe.xapp_frame", "mdc": {}, "msg": "[MobiFlow] Storing MobiFlow record to SDL BS;2;1729716349154.1838;v2.0;SECSM;0;208;099;0;00bc614e;1000;1;0;0;1729716338046.782;0"}
+{"ts": 1729716349156, "crit": "INFO", "id": "ricxappframe.xapp_frame", "mdc": {}, "msg": "[MobiFlow] Storing MobiFlow record to SDL UE;2;1729716349154.2026;v2.0;SECSM;0;60786;1450744508;0;0;0;0;0;RRCSetupComplete;2;0;0;0;1729716349154.0103;0;0;0"}
+{"ts": 1729716349156, "crit": "INFO", "id": "ricxappframe.xapp_frame", "mdc": {}, "msg": "[MobiFlow] Storing MobiFlow record to SDL UE;3;1729716349154.2297;v2.0;SECSM;0;60786;1450744508;0;0;0;0;0;Registrationrequest;2;1;0;0;1729716349154.0103;0;1729716349154.0103;0"}
+{"ts": 1729716349156, "crit": "INFO", "id": "ricxappframe.xapp_frame", "mdc": {}, "msg": "[MobiFlow] Storing MobiFlow record to SDL BS;3;1729716349154.2725;v2.0;SECSM;0;208;099;0;00bc614e;1000;1;0;0;1729716338046.782;0"}
 ...
 ```
 
-## Uninstall MobiFlow-Auditor xApp
+## SDL Database
 
-Undeploy the MobiFlow-Auditor xApp from Kubernetes
+The MobiFlow telemetry will be stored in the SDL databased provided by the OSC RIC infrastructure. The Shared Data Layer (SDL) provides a lightweight, high-speed interface (API) for accessing shared data storage. SDL can be used for storing and sharing any data. Data can be shared at VNF level. One typical use case for SDL is sharing the state data of stateful application processes. Thus enabling stateful application processes to become stateless, conforming with, e.g., the requirements of the fifth generation mobile networks. Refer to: https://wiki.o-ran-sc.org/pages/viewpage.action?pageId=20874400
+
+By default, the OSC near-RT RIC will deploy the redis database as a service backend.
 
 ```
-./uninstall_xapp.sh
+$ sudo kubectl get pods -n ricplt
+NAME                                                         READY   STATUS    RESTARTS   AGE
+...
+statefulset-ricplt-dbaas-server-0                            1/1     Running   0          100m
 ```
+
+You may login to the SDL through:
+
+```
+kubectl exec -it statefulset-ricplt-dbaas-server-0 -n ricplt sh
+```
+
+Use the `sdlcli` command in the pod to lookup the stored MobiFlow data:
+
+```
+/data # sdlcli get namespaces
+appdb
+appmgr
+bs_mobiflow
+e2Manager
+submgr_restSubsDb
+ue_mobiflow
+/data #
+/data # sdlcli get ue_mobiflow 1
+1:�iUE;1;1729716349154.0964;v2.0;SECSM;0;60786;1450744508;0;0;0;0;0;RRCSetup;2;0;0;0;1729716349154.0103;0;0;0
+```
+
+Other xApps deployed at the nRT-RIC can also use RESTFul APIs to access these data in the SDL. Refer to our other xApp examples such as [MobieXpert](https://github.com/5GSEC/MobieXpert/tree/osc) and [MobiWatch](https://github.com/5GSEC/MobiWatch) to checkout the implementation.
 
 
 ## Publication
+
+Please cite our research papers if you develop any products and prototypes based on our code:
 
 ```
 @inproceedings{wen2022fine,
