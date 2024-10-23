@@ -19,7 +19,7 @@ To learn more about the format and structure of MobiFlow, please refer to our pa
 MobiFlow Auditor's current implementation is dedicated for the [OSC RIC](https://wiki.o-ran-sc.org/display/ORAN). It is developed based on the [OSC RIC's python SDK](https://github.com/o-ran-sc/ric-plt-xapp-frame-py). Our running example below shows how to setup a 5G network based on the [OpenAirInterface5G](https://gitlab.eurecom.fr/oai/openairinterface5g/) project.
 
 
-We also have an old version at branch `main` implemented for the [ONOS RIC](https://docs.onosproject.org/v0.6.0/onos-cli/docs/cli/onos_ric/) on [SD-RAN](https://docs.sd-ran.org/master/index.html). It was used as part of the [5G-Spector](https://github.com/5GSEC/5G-Spector) but not recommended any more since the ONOS RIC xApp python SDK is no longer being maintained.
+We also have an old version at branch `main` implemented for the [ONOS RIC](https://docs.onosproject.org/v0.6.0/onos-cli/docs/cli/onos_ric/) on [SD-RAN](https://docs.sd-ran.org/master/index.html). It was used as part of the [5G-Spector](https://github.com/5GSEC/5G-Spector) artifact but not recommended any more since the ONOS RIC xApp python SDK is no longer being maintained.
 
 
 
