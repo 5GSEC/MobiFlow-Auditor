@@ -40,7 +40,7 @@ storage:
 replicaCount: 1
 
 # Image pulling policy
-image_pull_policy: IfNotPresent
+image_pull_policy: Always
 
 # Environment variables that will be injected
 appenv: {}
@@ -60,8 +60,8 @@ fullname: {}
 ###############    The following are from the xApp descriptor     ###############
 containers:
 - image:
-    name: xapp/mobiflow-auditor
-    registry: 5gsec.se-ran.org:10004
+    name: mobiflow-auditor
+    registry: localhost:5000
     tag: 0.0.1
   name: mobiflow-auditor
 controls:
