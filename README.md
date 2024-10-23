@@ -43,6 +43,8 @@ MobiFlow Auditor xApp requires O-RAN compliant RAN nodes to collect and report c
 
 ## Build the MobiFlow-Auditor xApp
 
+Simply run our build script:
+
 ```
 ./build.sh
 ```
@@ -107,14 +109,14 @@ Run the MobiFlow Auditor xApp (assuming the image has been built):
 Finally, run the OAI nrUE (or a commercial UE) to attach to the gNB and generate 5G traffic. We have provided instructions on how to run the OAI UE at this [link](https://github.com/5GSEC/5G-Spector/wiki/O%E2%80%90RAN-SC-RIC-Deployment-Guide#run-oai-ue).
 
 
-After the gNB and UE is running. You can check the xApp log by running:
+By running the MobiFlow Auditor on the RIC along with an OAI gNB and nrUE, MobiFlow Auditor will generate and store MobiFlow telemetry. You can check the run-time logs with:
+
 
 ```
 ./log.sh
 ```
 
-
-By running the MobiFlow Auditor on the RIC along with an OAI gNB and nrUE, MobiFlow Auditor will generate and store MobiFlow telemetry. You can check the run-time logs with:
+Example log entries:
 
 ```
 {"ts": 1729716349154, "crit": "INFO", "id": "ricxappframe.xapp_frame", "mdc": {}, "msg": "[MobiFlow] Storing MobiFlow record to SDL UE;0;1729716349154.052;v2.0;SECSM;0;60786;1450744508;0;0;0;0;0;RRCSetupRequest;0;0;0;0;0;0;0;0"}
