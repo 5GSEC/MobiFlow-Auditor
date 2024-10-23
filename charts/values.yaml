@@ -40,7 +40,7 @@ storage:
 replicaCount: 1
 
 # Image pulling policy
-image_pull_policy: IfNotPresent
+image_pull_policy: Always
 
 # Environment variables that will be injected
 appenv: {}
@@ -61,8 +61,8 @@ fullname: {}
 containers:
 - image:
     name: mobiflow-auditor
-    registry: localhost:5000
-    tag: 0.0.1
+    registry: 127.0.0.1:5000
+    tag: 0.0.3
   name: mobiflow-auditor
 controls:
   fileStrorage: false
@@ -115,4 +115,4 @@ rmr:
   - A1_POLICY_RESP
   - A1_POLICY_QUERY
   - RIC_HEALTH_CHECK_RESP
-version: 0.0.1
+version: 0.0.3
