@@ -22,8 +22,17 @@ MobiFlow Auditor's current implementation is dedicated for the [OSC RIC](https:/
 We also have an old version at branch `main` implemented for the [ONOS RIC](https://docs.onosproject.org/v0.6.0/onos-cli/docs/cli/onos_ric/) on [SD-RAN](https://docs.sd-ran.org/master/index.html). It was used as part of the [5G-Spector](https://github.com/5GSEC/5G-Spector) artifact but not recommended any more since the ONOS RIC xApp python SDK is no longer being maintained.
 
 
+## MobiFlow Structure
+
+The current MobiFlow message definition is defined in [mobiflow.py](./src/mobiflow/mobiflow.py#L60). It mainly collects (1) the fine-grained layer-3 (RRC and NAS) state transition information of UEs at the message level; (2) the aggregated flow-based statistics from the base stations. The MobiFlow telemetry report process is based on the E2SM-KPM (v2.0) service model (SM). 
+
+MobiFlow Auditor xApp requires O-RAN compliant RAN nodes to collect and report corresponding data. We have augmented the OpenAirInterface project with MobiFlow telemetry support at [https://github.com/onehouwong/OAI-5G](https://github.com/5GSEC/OAI-5G) branch `v2.1.0.secsm.osc`.
+
+
 
 ## Prerequisite
+
+### Local Docker registry
 
 MobiFlow-Auditor is built from source as a local Docker container. Refer to the official tutorial (https://docs.docker.com/engine/install/) to install and set up the Docker environment.
 
@@ -33,12 +42,9 @@ Create a local docker registry to host docker images:
 sudo docker run -d -p 5000:5000 --restart=always --name registry registry:2
 ```
 
+### OSC nearRT RIC
 
-## MobiFlow Structure
-
-The current MobiFlow message definition is defined in [mobiflow.py](./src/mobiflow/mobiflow.py#L60). It mainly collects (1) the fine-grained layer-3 (RRC and NAS) state transition information of UEs at the message level; (2) the aggregated flow-based statistics from the base stations. The MobiFlow telemetry report process is based on the E2SM-KPM (v2.0) service model (SM). 
-
-MobiFlow Auditor xApp requires O-RAN compliant RAN nodes to collect and report corresponding data. We have augmented the OpenAirInterface project with MobiFlow telemetry support at [https://github.com/onehouwong/OAI-5G](https://github.com/5GSEC/OAI-5G) branch `v2.1.0.secsm.osc`.
+Before deploying the xApp, make sure the OSC nRT-RIC is deployed by following this [tutorial](https://github.com/5GSEC/5G-Spector/wiki/O%E2%80%90RAN-SC-RIC-Deployment-Guide#deploy-the-osc-near-rt-ric).
 
 
 ## Build the MobiFlow-Auditor xApp
@@ -58,7 +64,7 @@ localhost:5000/mobiflow-auditor    0.0.1     c6312eb0d32e   2 minutes ago    237
 ```
 
 
-## Install / Uninstall the MobiFlow-Auditor xApp
+## Install / Uninstall the xApp
 
 First, onboard the xApp. You need to set up the proper environment with the `dms_cli` tool. Follow the instructions [here](https://github.com/5GSEC/5G-Spector/wiki/O%E2%80%90RAN-SC-RIC-Deployment-Guide) to install the tool. 
 
@@ -95,10 +101,16 @@ If you wish to undeploy the MobiFlow-Auditor xApp from Kubernetes, run:
 
 The below running example shows how to use the MobiFlow Auditor xApp to capture security telemetry from a live 5G network and stores the telemetry into the SDL database.
 
-Before running, make sure the OSC nRT-RIC is deployed by following this [tutorial](https://github.com/5GSEC/5G-Spector/wiki/O%E2%80%90RAN-SC-RIC-Deployment-Guide#deploy-the-osc-near-rt-ric).
+### Step 1. Deploy the OSC nRT RIC
+
+Deploy the OSC nRT-RIC and make sure it is running properly following this [tutorial](https://github.com/5GSEC/5G-Spector/wiki/O%E2%80%90RAN-SC-RIC-Deployment-Guide#deploy-the-osc-near-rt-ric)
+
+### Step 2. Deploy the OAI gNB
 
 Next, deploy the OAI gNB that connects to the nRT-RIC through the E2 interface. You can refer to our [tutorial](https://github.com/5GSEC/5G-Spector/wiki/O%E2%80%90RAN-SC-RIC-Deployment-Guide#connect-oai-gnb-to-osc-ric) to deploy the OAI gNB which is extended with the E2 agent we have implemented. Ensure the gNB is up and connected to the RIC.
+Make sure the gNB's E2 interface IP points to the nRT-RIC's E2T pod.
 
+### Step 3. Run the MobiFlow Auditor xApp
 
 Run the MobiFlow Auditor xApp (assuming the image has been built):
 
@@ -106,17 +118,21 @@ Run the MobiFlow Auditor xApp (assuming the image has been built):
 ./deploy.sh
 ```
 
+The xApp will recognize the gNB and starts a subscription with it through the E2SM KPM service model.
+
+### Step 4. Start the OAI nrUE to generate traffic
+
 Finally, run the OAI nrUE (or a commercial UE) to attach to the gNB and generate 5G traffic. We have provided instructions on how to run the OAI UE at this [link](https://github.com/5GSEC/5G-Spector/wiki/O%E2%80%90RAN-SC-RIC-Deployment-Guide#run-oai-ue).
 
+### Step 5. Examine the MobiFlow data
 
 By running the MobiFlow Auditor on the RIC along with an OAI gNB and nrUE, MobiFlow Auditor will generate and store MobiFlow telemetry. You can check the run-time logs with:
-
 
 ```
 ./log.sh
 ```
 
-Example log entries:
+Example log entries from the xApp:
 
 ```
 {"ts": 1729716349154, "crit": "INFO", "id": "ricxappframe.xapp_frame", "mdc": {}, "msg": "[MobiFlow] Storing MobiFlow record to SDL UE;0;1729716349154.052;v2.0;SECSM;0;60786;1450744508;0;0;0;0;0;RRCSetupRequest;0;0;0;0;0;0;0;0"}
