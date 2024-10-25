@@ -36,7 +36,7 @@ setup(
     python_requires='>=3.8',
     install_requires=["ricxappframe>=1.1.1,<2.3.0"],
     entry_points={"console_scripts": ["run-xapp.py=src.main:launchXapp"]},  # adds a magical entrypoint for Docker
-    data_files=[("", ["LICENSE.txt"])],
+    data_files=[("", ["LICENSE"])],
 )
 
 
