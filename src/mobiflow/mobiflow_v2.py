@@ -377,28 +377,17 @@ def parse_measurement_into_mobiflow(kpm_measurement_dict: dict) -> List[UEMobiFl
 
     # populate MobiFlow telemetry
     mf = UEMobiFlow()
-    if "timestamp" in kpm_keys: 
-        mf.timestamp = int(kpm_measurement_dict["timestamp"]) 
-    if "nr_cell_id" in kpm_keys:
-        mf.nr_cell_id = int(kpm_measurement_dict["nr_cell_id"])
-    if "gnb_du_ue_f1ap_id" in kpm_keys:
-        mf.gnb_du_ue_f1ap_id = int(kpm_measurement_dict["gnb_du_ue_f1ap_id"])
-    if "gnb_cu_ue_f1ap_id" in kpm_keys:
-        mf.gnb_cu_ue_f1ap_id = int(kpm_measurement_dict["gnb_cu_ue_f1ap_id"])
-    if "rnti" in kpm_keys:
-        mf.rnti = int(kpm_measurement_dict["rnti"])
-    if "s_tmsi" in kpm_keys:
-        mf.s_tmsi = int(kpm_measurement_dict["s_tmsi"])
-    if "establish_cause" in kpm_keys:
-        mf.establish_cause = int(kpm_measurement_dict["establish_cause"])
-    if "rrc_cipher_alg" in kpm_keys:
-        mf.rrc_cipher_alg = int(kpm_measurement_dict["rrc_cipher_alg"])
-    if "rrc_integrity_alg" in kpm_keys:
-        mf.rrc_integrity_alg = int(kpm_measurement_dict["rrc_integrity_alg"])
-    if "nas_cipher_alg" in kpm_keys:
-        mf.nas_cipher_alg = int(kpm_measurement_dict["nas_cipher_alg"])
-    if "nas_integrity_alg" in kpm_keys:
-        mf.nas_integrity_alg = int(kpm_measurement_dict["nas_integrity_alg"])
+
+    # Metadata telemetry
+    for key in kpm_keys:
+        if key in mf.__dict__.keys():
+            setattr(mf, key, int(kpm_measurement_dict[key])) # assume key name and variable name matches
+        elif key.startswith("msg"):
+            continue
+        else:
+            logging.error(f"[MobiFlow] Unknown telemetry {key}")
+
+    # Packet-level telemetry
     for i in range(1, msg_len+1):
         mf = mf.copy() # one MobiFlow entry per packet
         msg_val = int(kpm_measurement_dict[f"msg{i}"])
