@@ -67,7 +67,8 @@ class KpmIndicationHandler(_BaseHandler):
 
         ue_mfs = parse_measurement_into_mobiflow(kpm_measurement_dict)
         for mf in ue_mfs:
-            self.logger.info(mf.__str__())
+            self.logger.info(f"[MobiFlow] Storing MobiFlow record to SDL {mf.__str__()}")
+            self.sdl_mgr.store_data_to_sdl(UE_MOBIFLOW_NS, str(mf.msg_id), mf.__str__())
 
         # fb = FactBase()
         # fb.update_fact_base(kpm_measurement_dict, me_id)
