@@ -129,10 +129,9 @@ class SubscriptionManager(_BaseManager):
                     bs = BS()
                     fb = FactBase()
                     bs.name = me_id  # gnb_208_099_00000e00
-                    bs.nr_cell_id = -1  # new BS
                     bs.mcc = me_id.split("_")[1]
                     bs.mnc = me_id.split("_")[2]
-                    bs.cell_id = me_id.split("_")[3]
+                    bs.nr_cell_id = int(me_id.split("_")[3], 16)
                     bs.report_period = self.report_period
                     fb.add_bs(bs)
                     mf_list = fb.update_mobiflow()

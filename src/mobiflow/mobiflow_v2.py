@@ -121,7 +121,6 @@ class BSMobiFlow:
         self.mcc = ""                   # BS meta  - mobile country code
         self.mnc = ""                   # BS meta  - mobile network code
         self.tac = ""                   # BS meta  - tracking area code
-        self.cell_id = ""               # BS meta  - cell Id
         self.report_period = 0          # BS meta  - report period (ms)
         #####################################################################
         self.connected_ue_cnt = 0       # BS stats -
@@ -276,7 +275,6 @@ class BS:
         self.mcc = 0
         self.mnc = 0
         self.tac = 0
-        self.cell_id = 0
         self.report_period = 0
         #### BS Stats ####
         self.connected_ue_cnt = 0
@@ -344,7 +342,6 @@ class BS:
         bmf.mcc = self.mcc
         bmf.mnc = self.mnc
         bmf.tac = self.tac
-        bmf.cell_id = self.cell_id
         bmf.report_period = self.report_period
         bmf.connected_ue_cnt = self.connected_ue_cnt
         bmf.idle_ue_cnt = self.idle_ue_cnt
