@@ -80,7 +80,6 @@ class UEMobiFlow:
         self.rrc_integrity_alg = 0      # UE packet telemetry  - rrc integrity algorithm
         self.nas_cipher_alg = 0         # UE packet telemetry  - nas cipher algorithm
         self.nas_integrity_alg = 0      # UE packet telemetry  - nas integrity algorithm
-        self.establish_cause = 0        # UE packet telemetry  - establishment cause
         #####################################################################
         self.rrc_msg = ""               # UE packet-agnostic telemetry  - RRC message
         self.nas_msg = ""               # UE packet-agnostic telemetry  - NAS message
@@ -118,7 +117,7 @@ class BSMobiFlow:
         self.mobiflow_ver = MOBIFLOW_VERSION        # Msg hdr  - version of Mobiflow
         self.generator_name = GENERATOR_NAME        # Msg hdr  - generator name (e.g., SECSM)
         #####################################################################
-        self.nr_cell_id = 0                  # BS meta  - basestation id
+        self.nr_cell_id = 0             # BS meta  - basestation id
         self.mcc = ""                   # BS meta  - mobile country code
         self.mnc = ""                   # BS meta  - mobile network code
         self.tac = ""                   # BS meta  - tracking area code
@@ -157,7 +156,6 @@ class UE:
         self.rrc_integrity_alg = 0
         self.nas_cipher_alg = 0
         self.nas_integrity_alg = 0
-        self.establish_cause = 0
         self.rrc_state = RRCState.INACTIVE
         self.nas_state = EMMState.EMM_DEREGISTERED
         self.rrc_sec_state = SecState.SEC_CONTEXT_NOT_EXIST
@@ -254,7 +252,6 @@ class UE:
         umf.s_tmsi = self.s_tmsi
         umf.cipher_alg = self.cipher_alg
         umf.integrity_alg = self.integrity_alg
-        umf.establish_cause = self.establish_cause
         umf.emm_cause = self.emm_cause
         prev_rrc, prev_nas, prev_rrc_sec, rrc, nas, sec = 0, 0, 0, 0, 0, 0
         if self.current_msg_index < self.msg_trace.__len__():
@@ -425,6 +422,9 @@ def parse_measurement_into_mobiflow(kpm_measurement_dict: dict) -> List[UEMobiFl
             # not EMM message
             mf.nas_msg = ""
         
+        global UE_MOBIFLOW_ID_COUNTER
+        mf.msg_id = UE_MOBIFLOW_ID_COUNTER
+        UE_MOBIFLOW_ID_COUNTER = UE_MOBIFLOW_ID_COUNTER + 1
         mfs.append(mf)
 
     return mfs
