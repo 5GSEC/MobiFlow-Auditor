@@ -20,6 +20,8 @@ class AsnProxy(ABC):
         result = subprocess.run([self.wrapper_path, operation, structure_name, hex_str], capture_output=True, text=True)
         # Return the result
         xml_str = result.stdout.strip()
+        if len(xml_str.strip()) == 0:
+            return None
         return self.element_to_dict(ET.fromstring(xml_str))
 
     @abstractmethod

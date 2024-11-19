@@ -31,7 +31,7 @@ RUN apk update && apk add gcc musl-dev bash
 # Install
 COPY setup.py /tmp
 COPY README.md /tmp
-COPY LICENSE.txt /tmp/
+COPY LICENSE /tmp/
 COPY src/ /tmp/src
 COPY init/ /tmp/init
 # compile ASN C wrapper

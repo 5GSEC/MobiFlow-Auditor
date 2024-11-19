@@ -5,8 +5,8 @@
         {
             "name": "mobiflow-auditor",
             "image": {
-                "registry": "5gsec.se-ran.org:10004",
-                "name": "xapp/mobiflow-auditor",
+                "registry": "127.0.0.1:5000",
+                "name": "mobiflow-auditor",
                 "tag": "0.0.1"
             }
         }
