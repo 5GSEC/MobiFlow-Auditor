@@ -16,7 +16,7 @@
 #
 # ==================================================================================
 import time
-
+import json
 import requests
 from os import getenv
 from ricxappframe.xapp_frame import RMRXapp, rmr
@@ -65,7 +65,10 @@ class HWXapp:
 
         self._register(rmr_xapp)
 
-        TARGET_OID_LIST = ["1.3.6.1.4.1.53148.1.2.2.2"]
+        # load xApp config
+        with open(self.__XAPP_CONFIG_PATH, 'r') as config_file:
+            config_json = json.loads(config_file.read())
+            self.target_oid_list = config_json["ran"]["target_oid_list"]
 
         # obtain nodeb list for subscription
         enb_list = self.sdl_mgr.get_enb_list()
@@ -81,7 +84,7 @@ class HWXapp:
             nodeb_info_json = self.sdl_mgr.get_nodeb_info_by_inventory_name(inventory_name)
             for ran_func in nodeb_info_json["gnb"]["ranFunctions"]:
                 rf_oid = ran_func["ranFunctionOid"]
-                if rf_oid in TARGET_OID_LIST:
+                if rf_oid in self.target_oid_list:
                     rmr_xapp.logger.debug(f"Found target ran function for gNB {inventory_name}: {ran_func}")
                     # Subscribe to NodeB
                     rmr_xapp.logger.debug(f"connection status {connection_status}")
