@@ -17,6 +17,7 @@
 # ==================================================================================
 import time
 import json
+import threading
 import requests
 from os import getenv
 from ricxappframe.xapp_frame import RMRXapp, rmr
@@ -69,29 +70,36 @@ class HWXapp:
         with open(self.__XAPP_CONFIG_PATH, 'r') as config_file:
             config_json = json.loads(config_file.read())
             self.target_oid_list = config_json["ran"]["target_oid_list"]
+        
+        # Start subscription processing in a separate thread
+        subscription_thread = threading.Thread(target=self._process_subscription, args=(rmr_xapp,), daemon=True)
+        subscription_thread.start()
 
-        # obtain nodeb list for subscription
-        enb_list = self.sdl_mgr.get_enb_list()
-        subscribe_nb_list = []
-        for enb_nb_identity in enb_list:
-            inventory_name = enb_nb_identity.inventory_name
-            nodeb_info_json = self.sdl_mgr.get_nodeb_info_by_inventory_name(inventory_name)
-
-        gnb_list = self.sdl_mgr.get_gnb_list()
-        for gnb_nb_identity in gnb_list:
-            inventory_name = gnb_nb_identity.inventory_name
-            connection_status = gnb_nb_identity.connection_status
-            nodeb_info_json = self.sdl_mgr.get_nodeb_info_by_inventory_name(inventory_name)
-            for ran_func in nodeb_info_json["gnb"]["ranFunctions"]:
-                rf_oid = ran_func["ranFunctionOid"]
-                if rf_oid in self.target_oid_list:
-                    rmr_xapp.logger.debug(f"Found target ran function for gNB {inventory_name}: {ran_func}")
-                    # Subscribe to NodeB
-                    rmr_xapp.logger.debug(f"connection status {connection_status}")
-                    if connection_status == 1:
-                        self.sub_mgr.send_subscription_request(gnb_nb_identity, ran_func)
-
-        # TODO: keep polling node b list but do not block this function
+    
+    def _process_subscription(self, rmr_xapp):
+        """
+        Function to obtain nodeb list and handle subscriptions in an infinite loop
+        """
+        while True:
+            # obtain nodeb list for subscription.
+            time.sleep(5) # query at each interval
+            # enb_list = self.sdl_mgr.get_enb_list()
+            # for enb_nb_identity in enb_list:
+            #     inventory_name = enb_nb_identity.inventory_name
+            #     nodeb_info_json = self.sdl_mgr.get_nodeb_info_by_inventory_name(inventory_name)
+            gnb_list = self.sdl_mgr.get_gnb_list()
+            for gnb_nb_identity in gnb_list:
+                inventory_name = gnb_nb_identity.inventory_name
+                connection_status = gnb_nb_identity.connection_status
+                nodeb_info_json = self.sdl_mgr.get_nodeb_info_by_inventory_name(inventory_name)
+                for ran_func in nodeb_info_json["gnb"]["ranFunctions"]:
+                    rf_oid = ran_func["ranFunctionOid"]
+                    if rf_oid in self.target_oid_list:
+                        rmr_xapp.logger.debug(f"Found target ran function for gNB {inventory_name}: {ran_func}")
+                        # Subscribe to NodeB
+                        rmr_xapp.logger.debug(f"connection status {connection_status}")
+                        if connection_status == 1:
+                            self.sub_mgr.send_subscription_request(gnb_nb_identity, ran_func)
 
     def _register(self, rmr_xapp):
         # Register xApp to the App mgr
