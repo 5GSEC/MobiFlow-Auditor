@@ -56,7 +56,7 @@ class SecState(State):
 
 ###################### Constants ######################
 
-MOBIFLOW_VERSION = "v2.0"
+MOBIFLOW_VERSION = "v2.1"
 GENERATOR_NAME = "SECSM"
 UE_MOBIFLOW_ID_COUNTER = 0
 BS_MOBIFLOW_ID_COUNTER = 0
@@ -79,6 +79,7 @@ class UEMobiFlow:
         self.gnb_du_ue_f1ap_id = 0      # UE meta  - UE id identified by gNB DU F1AP
         self.rnti = 0                   # UE meta  - ue rnti
         self.s_tmsi = 0                 # UE meta  - ue s-tmsi
+        self.mobile_id = 0              # UE meta  - mobile device id (e.g., SUPI, SUCI, IMEI)
         self.rrc_cipher_alg = 0         # UE packet telemetry  - rrc cipher algorithm
         self.rrc_integrity_alg = 0      # UE packet telemetry  - rrc integrity algorithm
         self.nas_cipher_alg = 0         # UE packet telemetry  - nas cipher algorithm
@@ -379,6 +380,18 @@ def parse_measurement_into_mobiflow(kpm_measurement_dict: dict) -> List[UEMobiFl
     for key in kpm_keys:
         if key in mf.__dict__.keys():
             setattr(mf, key, int(kpm_measurement_dict[key])) # assume key name and variable name matches
+        elif key == "s_tmsi_part1":
+            mf.s_tmsi = int(kpm_measurement_dict[key]) << 32
+        elif key == "s_tmsi_part2":
+            mf.s_tmsi = mf.s_tmsi + int(kpm_measurement_dict[key])
+        elif key == "nr_cell_id_part1":
+            mf.nr_cell_id = int(kpm_measurement_dict[key]) << 32
+        elif key == "nr_cell_id_part2":
+            mf.nr_cell_id = mf.nr_cell_id + int(kpm_measurement_dict[key])
+        elif key == "mobile_id_part1":
+            mf.mobile_id = int(kpm_measurement_dict[key]) << 32
+        elif key == "mobile_id_part2":
+            mf.mobile_id = mf.mobile_id + int(kpm_measurement_dict[key])
         elif key.startswith("msg"):
             continue
         else:
