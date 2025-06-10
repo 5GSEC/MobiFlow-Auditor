@@ -73,7 +73,7 @@ class UEMobiFlow:
         self.mobiflow_ver = MOBIFLOW_VERSION        # Msg hdr  - version of Mobiflow
         self.generator_name = GENERATOR_NAME        # Msg hdr  - generator name (e.g., SECSM)
         #####################################################################
-        self.timestamp = 0              # UE meta  - timestamp (ms)
+        self.timestamp = 0              # UE meta  - timestamp (s)
         self.nr_cell_id = 0             # UE meta  - NR (5G) basestation id
         self.gnb_cu_ue_f1ap_id = 0      # UE meta  - UE id identified by gNB CU F1AP
         self.gnb_du_ue_f1ap_id = 0      # UE meta  - UE id identified by gNB DU F1AP
@@ -117,7 +117,7 @@ class BSMobiFlow:
     def __init__(self):
         self.msg_type = "BS"            # Msg hdr  - mobiflow type [UE, BS]
         self.msg_id = 0                 # Msg hdr  - unique mobiflow event ID
-        self.timestamp = get_time_sec()              # Msg hdr  - timestamp (ms)
+        self.timestamp = get_time_sec()             # Msg hdr  - timestamp (s)
         self.mobiflow_ver = MOBIFLOW_VERSION        # Msg hdr  - version of Mobiflow
         self.generator_name = GENERATOR_NAME        # Msg hdr  - generator name (e.g., SECSM)
         #####################################################################
