@@ -3,6 +3,7 @@ import logging
 from .mobiflow_v2 import *
 from .encoding import *
 from .constant import *
+from ..utils import get_time_sec
 
 class FactBase:
 
@@ -12,7 +13,6 @@ class FactBase:
     def __init__(self):
         if not hasattr(self, 'initialized'):
             self.facts = {}
-            self.nr_cell_id_counter = 0
             self.bs_name_map = {}
             self.initialized = True
 
@@ -47,16 +47,18 @@ class FactBase:
                 break
         return mf_list
 
-    def add_bs(self, bs: BS):
+    def add_or_update_bs(self, bs: BS):
         with self._lock:
             if not self.facts.keys().__contains__(bs.nr_cell_id):
-                bs.ts = time.time() * 1000
-                bs.nr_cell_id = self.nr_cell_id_counter
+                bs.ts = get_time_sec()
                 self.bs_name_map[bs.name] = bs.nr_cell_id
-                self.nr_cell_id_counter += 1
                 self.facts[bs.nr_cell_id] = bs
+                self.facts[bs.nr_cell_id].should_report = True
             else:
-                self.facts[bs.nr_cell_id].ts = time.time()
+                if self.facts[bs.nr_cell_id].status != bs.status:
+                    self.facts[bs.nr_cell_id].ts = get_time_sec()
+                    self.facts[bs.nr_cell_id].status = bs.status # update BS status
+                    self.facts[bs.nr_cell_id].should_report = True
 
     def add_ue(self, bsId, ue: UE):
         with self._lock:
@@ -64,7 +66,7 @@ class FactBase:
                 print("[Error] BS id not exist when trying to add UE: %s" % bsId)
                 return
             else:
-                ue.ts = time.time() * 1000
+                ue.ts = get_time_sec()
                 ue.nr_cell_id = bsId
                 if self.facts[bsId] is not None:
                     self.facts[bsId].add_ue(ue)

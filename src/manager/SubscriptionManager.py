@@ -29,7 +29,7 @@ from ricxappframe.entities.rnib.nb_identity_pb2 import NbIdentity
 from ..manager import SdlManager
 from ..asn1 import AsnProxy
 from ._BaseManager import _BaseManager
-from ..mobiflow import BS, BS_MOBIFLOW_NS
+from ..mobiflow import FactBase, BS, BS_MOBIFLOW_NS, BsStatus
 from ..utils import Constants, find_all_values
 from mdclogpy import Level
 
@@ -132,10 +132,16 @@ class SubscriptionManager(_BaseManager):
                     bs.mnc = me_id.split("_")[2]
                     bs.nr_cell_id = int(me_id.split("_")[3], 16)
                     bs.report_period = self.report_period
-                    mf = bs.generate_mobiflow()
-                    # store Mobiflow to SDL
-                    self.logger.info(f"[MobiFlow] Storing MobiFlow record to SDL {mf.__str__()}")
-                    self.sdl_mgr.store_data_to_sdl(BS_MOBIFLOW_NS, str(mf.msg_id), mf.__str__())
+                    bs.status = BsStatus.CONNECTED
+                    fb = FactBase()
+                    fb.add_or_update_bs(bs)
+                    bs = fb.get_bs(bs.nr_cell_id)
+                    if bs.should_report:
+                        # report only when there's new update to the BS
+                        mf = bs.generate_mobiflow()
+                        # store Mobiflow to SDL
+                        self.logger.info(f"[MobiFlow] Storing MobiFlow record to SDL {mf.__str__()}")
+                        self.sdl_mgr.store_data_to_sdl(BS_MOBIFLOW_NS, str(mf.msg_id), mf.__str__())
 
                     return None
 

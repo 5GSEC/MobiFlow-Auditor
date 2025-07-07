@@ -1,15 +1,9 @@
-import time
 import logging
 import copy
 from enum import Enum
 from typing import List
 from .encoding import *
-
-def get_time_ms():
-    return time.time() * 1000
-
-def get_time_sec():
-    return time.time()
+from ..utils import get_time_sec
 
 ###################### Auxiliary classes ######################
 
@@ -54,9 +48,13 @@ class SecState(State):
     SEC_CONTEXT_NOT_EXIST = 0
     SEC_CONTEXT_EXIST = 1
 
+class BsStatus(State):
+    CONNECTED = 1
+    DISCONNECTED = 2
+
 ###################### Constants ######################
 
-MOBIFLOW_VERSION = "v2.1"
+MOBIFLOW_VERSION = "v2.2"
 GENERATOR_NAME = "SECSM"
 UE_MOBIFLOW_ID_COUNTER = 0
 BS_MOBIFLOW_ID_COUNTER = 0
@@ -126,13 +124,14 @@ class BSMobiFlow:
         self.mnc = ""                   # BS meta  - mobile network code
         self.tac = ""                   # BS meta  - tracking area code
         self.report_period = 0          # BS meta  - report period (ms)
+        self.status = 0                 # BS meta  - status (1: connected, 2: disconnected)
         #####################################################################
-        self.connected_ue_cnt = 0       # BS stats -
-        self.idle_ue_cnt = 0            # BS stats -
-        self.max_ue_cnt = 0             # BS stats -
-        #####################################################################
-        self.initial_timer = 0          # BS timer  -
-        self.inactive_timer = 0         # BS timer  -
+        # self.connected_ue_cnt = 0       # BS stats -
+        # self.idle_ue_cnt = 0            # BS stats -
+        # self.max_ue_cnt = 0             # BS stats -
+        # #####################################################################
+        # self.initial_timer = 0          # BS timer  -
+        # self.inactive_timer = 0         # BS timer  -
 
     def __str__(self):
         attrs = []
@@ -280,6 +279,7 @@ class BS:
         self.mnc = 0
         self.tac = 0
         self.report_period = 0
+        self.status = 0
         #### BS Stats ####
         self.connected_ue_cnt = 0
         self.idle_ue_cnt = 0
@@ -347,11 +347,12 @@ class BS:
         bmf.mnc = self.mnc
         bmf.tac = self.tac
         bmf.report_period = self.report_period
-        bmf.connected_ue_cnt = self.connected_ue_cnt
-        bmf.idle_ue_cnt = self.idle_ue_cnt
-        bmf.max_ue_cnt = self.max_ue_cnt
-        bmf.initial_timer = self.initial_timer
-        bmf.inactive_timer = self.inactive_timer
+        bmf.status = self.status
+        # bmf.connected_ue_cnt = self.connected_ue_cnt
+        # bmf.idle_ue_cnt = self.idle_ue_cnt
+        # bmf.max_ue_cnt = self.max_ue_cnt
+        # bmf.initial_timer = self.initial_timer
+        # bmf.inactive_timer = self.inactive_timer
         self.should_report = False
         return bmf
 

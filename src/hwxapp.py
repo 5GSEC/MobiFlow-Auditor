@@ -25,6 +25,7 @@ from .utils.constants import Constants
 from .manager import *
 from .handler import *
 from .asn1 import StandardAsnProxy, OnosAsnProxy
+from .mobiflow import FactBase, BS, BS_MOBIFLOW_NS, BsStatus
 from mdclogpy import Level
 
 class HWXapp:
@@ -80,6 +81,8 @@ class HWXapp:
         """
         Function to obtain nodeb list and handle subscriptions in an infinite loop
         """
+        fb = FactBase() # init fact base
+
         while True:
             # obtain nodeb list for subscription.
             time.sleep(5) # query at each interval
@@ -92,6 +95,7 @@ class HWXapp:
                 inventory_name = gnb_nb_identity.inventory_name
                 connection_status = gnb_nb_identity.connection_status
                 nodeb_info_json = self.sdl_mgr.get_nodeb_info_by_inventory_name(inventory_name)
+                # rmr_xapp.logger.info(f"RAN {inventory_name} status {connection_status}")
                 for ran_func in nodeb_info_json["gnb"]["ranFunctions"]:
                     rf_oid = ran_func["ranFunctionOid"]
                     if rf_oid in self.target_oid_list:
@@ -100,6 +104,23 @@ class HWXapp:
                         rmr_xapp.logger.debug(f"connection status {connection_status}")
                         if connection_status == 1:
                             self.sub_mgr.send_subscription_request(gnb_nb_identity, ran_func)
+                        elif connection_status == 2:
+                            # create or update BS state
+                            me_id = inventory_name
+                            bs = BS()
+                            bs.name = me_id  # gnb_208_099_00000e00
+                            bs.mcc = me_id.split("_")[1]
+                            bs.mnc = me_id.split("_")[2]
+                            bs.nr_cell_id = int(me_id.split("_")[3], 16)
+                            bs.status = BsStatus.DISCONNECTED
+                            fb.add_or_update_bs(bs)
+                            bs = fb.get_bs(bs.nr_cell_id)
+                            if bs.should_report:
+                                # report only when there's new update to the BS
+                                mf = bs.generate_mobiflow()
+                                # store Mobiflow to SDL
+                                rmr_xapp.logger.info(f"[MobiFlow] Storing MobiFlow record to SDL {mf.__str__()}")
+                                self.sdl_mgr.store_data_to_sdl(BS_MOBIFLOW_NS, str(mf.msg_id), mf.__str__())
 
     def _register(self, rmr_xapp):
         # Register xApp to the App mgr
