@@ -1,10 +1,10 @@
 import time
 
 def get_time_ms():
-    return time.time() * 1000
+    return round(time.time() * 1000)
 
 def get_time_sec():
-    return time.time()
+    return round(time.time())
 
 def find_all_values(d, target_key):
     """

@@ -113,14 +113,16 @@ class HWXapp:
                             bs.mnc = me_id.split("_")[2]
                             bs.nr_cell_id = int(me_id.split("_")[3], 16)
                             bs.status = BsStatus.DISCONNECTED
-                            fb.add_or_update_bs(bs)
-                            bs = fb.get_bs(bs.nr_cell_id)
-                            if bs.should_report:
-                                # report only when there's new update to the BS
-                                mf = bs.generate_mobiflow()
-                                # store Mobiflow to SDL
-                                rmr_xapp.logger.info(f"[MobiFlow] Storing MobiFlow record to SDL {mf.__str__()}")
-                                self.sdl_mgr.store_data_to_sdl(BS_MOBIFLOW_NS, str(mf.msg_id), mf.__str__())
+                            if fb.get_bs_index_by_name(bs.name) != -1:
+                                # only track when the cell transit from connected to disconnected
+                                fb.add_or_update_bs(bs)
+                                bs = fb.get_bs(bs.nr_cell_id)
+                                if bs.should_report:
+                                    # report only when there's new update to the BS
+                                    mf = bs.generate_mobiflow()
+                                    # store Mobiflow to SDL
+                                    rmr_xapp.logger.info(f"[MobiFlow] Storing MobiFlow record to SDL {mf.__str__()}")
+                                    self.sdl_mgr.store_data_to_sdl(BS_MOBIFLOW_NS, str(mf.msg_id), mf.__str__())
 
     def _register(self, rmr_xapp):
         # Register xApp to the App mgr
