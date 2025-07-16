@@ -211,5 +211,11 @@ class SubscriptionManager(_BaseManager):
         action_def_encoded = [int(action_def_hex[i:i + 2], 16) for i in range(0, len(action_def_hex), 2)]
         return action_def_encoded
 
-
-
+    def delete_subscription(self, me_id: str):
+        if me_id not in self.subscription_list.keys():
+            self.logger.info(f"Subscription not found for {me_id}")
+            return -1
+        # delete subscription
+        self.logger.info(f"Deleting subscription for {me_id}")
+        self.subscription_list.pop(me_id)
+        return 0

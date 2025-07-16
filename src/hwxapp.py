@@ -123,6 +123,8 @@ class HWXapp:
                                     # store Mobiflow to SDL
                                     rmr_xapp.logger.info(f"[MobiFlow] Storing MobiFlow record to SDL {mf.__str__()}")
                                     self.sdl_mgr.store_data_to_sdl(BS_MOBIFLOW_NS, str(mf.msg_id), mf.__str__())
+                                    # delete subscription
+                                    self.sub_mgr.delete_subscription(inventory_name)
 
     def _register(self, rmr_xapp):
         # Register xApp to the App mgr
