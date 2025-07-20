@@ -24,7 +24,7 @@ from ricxappframe.xapp_frame import RMRXapp, rmr
 from .utils.constants import Constants
 from .manager import *
 from .handler import *
-from .asn1 import StandardAsnProxy, OnosAsnProxy
+from .asn1 import OnosAsnProxy
 from mdclogpy import Level
 
 class HWXapp:
@@ -43,7 +43,7 @@ class HWXapp:
 
     def __init__(self):
         fake_sdl = getenv("USE_FAKE_SDL", False)
-        self.asn_proxy = StandardAsnProxy(self.__ASN_WRAPPER_PATH)
+        self.asn_proxy = OnosAsnProxy(self.__ASN_WRAPPER_PATH)
         self._rmr_xapp = RMRXapp(self._default_handler,
                                  config_handler=self._handle_config_change,
                                  rmr_port=self.__RMR_PORT,
