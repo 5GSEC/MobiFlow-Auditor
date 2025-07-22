@@ -45,8 +45,10 @@ class EMMState(State):
 
 
 class SecState(State):
-    SEC_CONTEXT_NOT_EXIST = 0
-    SEC_CONTEXT_EXIST = 1
+    RRC_SEC_CONTEXT_NOT_EXIST = 0
+    RRC_SEC_CONTEXT_INTEGRITY_PROTECTED = 1
+    RRC_SEC_CONTEXT_CIPHERED = 2
+    RRC_SEC_CONTEXT_CIPHERED_AND_INTEGRITY_PROTECTED = 3
 
 class BsStatus(State):
     CONNECTED = 1
@@ -87,7 +89,7 @@ class UEMobiFlow:
         self.nas_msg = ""               # UE packet-agnostic telemetry  - NAS message
         self.rrc_state = 0              # UE packet-agnostic telemetry  - RRC state       [INACTIVE, RRC_IDLE, RRC_CONNECTED, RRC_RECONFIGURED]
         self.nas_state = 0              # UE packet-agnostic telemetry  - NAS state (EMM) [EMM_DEREGISTERED, EMM_REGISTER_INIT, EMM_REGISTERED]
-        self.rrc_sec_state = 0          # UE packet-agnostic telemetry  - security state  [SEC_CONTEXT_NOT_EXIST, SEC_CONTEXT_EXIST]
+        self.rrc_sec_state = 0          # UE packet-agnostic telemetry  - security state  [RRC_SEC_CONTEXT_NOT_EXIST, SERRC_SEC_CONTEXT_INTEGRITY_PROTECTED, RRC_SEC_CONTEXT_CIPHERED, RRC_SEC_CONTEXT_CIPHERED_AND_INTEGRITY_PROTECTED]
         #####################################################################
         self.reserved_field_1 = 0       # UE packet-specific telemetry
         self.reserved_field_2 = 0       # UE packet-specific telemetry
@@ -160,7 +162,7 @@ class UE:
         self.nas_integrity_alg = 0
         self.rrc_state = RRCState.INACTIVE
         self.nas_state = EMMState.EMM_DEREGISTERED
-        self.rrc_sec_state = SecState.SEC_CONTEXT_NOT_EXIST
+        self.rrc_sec_state = SecState.RRC_SEC_CONTEXT_NOT_EXIST
         self.emm_cause = 0
         #### UE Timer ####
         self.rrc_initial_timer = 0
@@ -200,7 +202,7 @@ class UE:
                 or msg == "RRCRelease":
             self.rrc_state = RRCState.RRC_IDLE
             self.nas_state = EMMState.EMM_DEREGISTERED
-            self.rrc_sec_state = SecState.SEC_CONTEXT_NOT_EXIST
+            self.rrc_sec_state = SecState.RRC_SEC_CONTEXT_NOT_EXIST
 
         elif msg == "RRCConnectionReject" or msg == "RRCConnectionReestablishmentReject"\
                 or msg == "RRCReject":
@@ -215,7 +217,8 @@ class UE:
 
         elif msg == "SecurityModeComplete": # RRC security state
                 # or msg == "Securitymodecomplete":
-            self.rrc_sec_state = SecState.SEC_CONTEXT_EXIST
+            # self.rrc_sec_state = SecState.SEC_CONTEXT_EXIST
+            pass
 
         elif msg == "ATTACH_COMPLETE"\
                 or msg == "RRCReconfigurationComplete" or msg == "Registrationcomplete" or msg == "Serviceaccept":
@@ -224,7 +227,7 @@ class UE:
         elif msg == "ATTACH_REJECT" or msg == "SERVICE_REJECT" or msg == "DETACH_ACCEPT" or msg == "TRACKING_AREA_UPDATE_REJECT" \
                 or msg == "Registrationreject" or msg == "Servicereject" or msg == "DeregistrationacceptUEoriginating":
             self.nas_state = EMMState.EMM_DEREGISTERED
-            self.rrc_sec_state = SecState.SEC_CONTEXT_NOT_EXIST
+            self.rrc_sec_state = SecState.RRC_SEC_CONTEXT_NOT_EXIST
 
         # update timer
         if prev_rrc_state != self.rrc_state:
