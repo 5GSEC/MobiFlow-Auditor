@@ -359,12 +359,19 @@ class BS:
         self.should_report = False
         return bmf
 
+def is_mobiflow_record_empty(kpm_measurement_dict: dict):
+    if "rnti" in kpm_measurement_dict.keys() and int(kpm_measurement_dict["rnti"]) == 0:
+        if "gnb_du_ue_f1ap_id" in kpm_measurement_dict.keys() and int(kpm_measurement_dict["gnb_du_ue_f1ap_id"]) == 0:
+            return True
+
+    return False
+
 
 def parse_measurement_into_mobiflow(kpm_measurement_dict: dict) -> List[UEMobiFlow]:
     mfs = []
     kpm_keys = kpm_measurement_dict.keys()
 
-    if "gnb_du_ue_f1ap_id" in kpm_keys and int(kpm_measurement_dict["gnb_du_ue_f1ap_id"]) == 0:
+    if is_mobiflow_record_empty(kpm_measurement_dict):
         return mfs # ignore empty indication records
     
     global UE_META_DATA_ITEM_LEN, UE_MOBIFLOW_ITEM_LEN
