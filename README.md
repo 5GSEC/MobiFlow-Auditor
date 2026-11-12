@@ -26,7 +26,16 @@ We also have an old version at branch `main` implemented for the [ONOS RIC](http
 
 The current MobiFlow message definition is defined in [mobiflow.py](./src/mobiflow/mobiflow.py#L60). It mainly collects (1) the fine-grained layer-3 (RRC and NAS) state transition information of UEs at the message level; (2) the aggregated flow-based statistics from the base stations. The MobiFlow telemetry report process is based on the E2SM-KPM (v2.0) service model (SM). 
 
-MobiFlow Auditor xApp requires O-RAN compliant RAN nodes to collect and report corresponding data. We have augmented the OpenAirInterface project with MobiFlow telemetry support at [https://github.com/onehouwong/OAI-5G](https://github.com/5GSEC/OAI-5G) branch `v2.1.0.secsm.osc`.
+### E2SM-CP (experimental)
+
+MobiFlow Auditor also subscribes to **E2SM-CP** (OID `1.3.6.1.4.1.32473.1.1.2.1`), the MobiFlow control plane telemetry service model of the [5G-eBPF MobiFlow agent](https://github.com/5GSEC/5G-eBPF) (spec: `e2sm/e2sm-cp` there). Instead of KPM measurements reported periodically, an E2 node reports every observed control plane message (F1AP, with the RRC and NAS messages inside) as an event, grouped by UE connection, when it occurs.
+
+- The RAN functions to subscribe to are listed by OID in `ran.target_oid_list` ([init/config-file.json](./init/config-file.json)); each is subscribed with the service model of its OID (exact match: `1.3.6.1.4.1.53148.1.2.2.2` E2SM-KPM, `1.3.6.1.4.1.32473.1.1.2.1` E2SM-CP; other OIDs are skipped with a warning). E2SM-CP RAN functions are subscribed with every report style and attribute they define.
+- RIC indications are decoded at the E2AP layer by [IndicationHandler](./src/handler/IndicationHandler.py) and handed to [KpmIndicationHandler](./src/handler/KpmIndicationHandler.py) or [CpIndicationHandler](./src/handler/CpIndicationHandler.py) depending on the subscription's service model.
+- E2SM-CP events are only logged for now (`[E2SM-CP]` lines); they are not stored in the SDL.
+- The E2SM-CP ASN.1 code is generated into `src/asn1/e2sm_cp` (`asn1_compile_cp.sh`) and built into its own wrapper, `src/asn1/wrapper_cp` (`wrapper_compile.sh`).
+- `tests/e2sm_cp/replay.py` replays E2AP PDUs recorded from the agent through the xApp code, without a RIC, and prints the log.
+
 
 
 

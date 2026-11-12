@@ -41,10 +41,11 @@ class HWXapp:
     __XAPP_RMR_END_POINT = "service-%s-%s-rmr.%s:%d" % (__XAPP_NAME_SPACE, __XAPP_NAME, __XAPP_NAME_SPACE, __RMR_PORT)
     __CONFIG_PATH = "/ric/v1/config"
     __ASN_WRAPPER_PATH = "/tmp/src/asn1/wrapper"
+    __ASN_CP_WRAPPER_PATH = "/tmp/src/asn1/wrapper_cp"  # E2SM-CP
 
     def __init__(self):
         fake_sdl = getenv("USE_FAKE_SDL", False)
-        self.asn_proxy = StandardAsnProxy(self.__ASN_WRAPPER_PATH)
+        self.asn_proxy = StandardAsnProxy(self.__ASN_WRAPPER_PATH, self.__ASN_CP_WRAPPER_PATH)
         self._rmr_xapp = RMRXapp(self._default_handler,
                                  config_handler=self._handle_config_change,
                                  rmr_port=self.__RMR_PORT,
@@ -104,7 +105,11 @@ class HWXapp:
                         rmr_xapp.logger.debug(f"connection status {connection_status}")
                         if connection_status == 1:
                             self.sub_mgr.send_subscription_request(gnb_nb_identity, ran_func)
-                        elif connection_status == 2:
+                        elif connection_status == 2 and self.sub_mgr.service_model_of(rf_oid) == Constants.SM_CP:
+                            # E2SM-CP keeps no BS state yet: forget the subscription so
+                            # that it is made again when the node reconnects
+                            self.sub_mgr.delete_subscription(inventory_name, ran_func["ranFunctionId"])
+                        elif connection_status == 2 and self.sub_mgr.service_model_of(rf_oid) == Constants.SM_KPM:
                             # create or update BS state
                             me_id = inventory_name
                             bs = BS()
@@ -189,7 +194,11 @@ class HWXapp:
         HealthCheckHandler(self._rmr_xapp, Constants.RIC_HEALTH_CHECK_REQ)
         A1PolicyHandler(self._rmr_xapp, Constants.A1_POLICY_REQ)
         SubscriptionHandler(self._rmr_xapp, Constants.SUBSCRIPTION_REQ)
-        KpmIndicationHandler(self._rmr_xapp, Constants.INDICATION_REQ, self.asn_proxy, self.sdl_mgr)
+        # E2AP layer; hands each indication to the handler of its service model
+        IndicationHandler(self._rmr_xapp, Constants.INDICATION_REQ, self.asn_proxy, self.sub_mgr, {
+            Constants.SM_KPM: KpmIndicationHandler(self._rmr_xapp, self.asn_proxy, self.sdl_mgr),
+            Constants.SM_CP: CpIndicationHandler(self._rmr_xapp, self.asn_proxy, self.sub_mgr),
+        })
 
     def start(self, thread=False):
         """

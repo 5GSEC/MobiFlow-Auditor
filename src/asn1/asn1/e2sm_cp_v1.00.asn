@@ -1,0 +1,383 @@
+-- ASN1START
+-- **************************************************************
+-- E2SM-CP (Control Plane) Information Element Definitions
+--
+-- Event telemetry of RAN control-plane messages (F1AP, NGAP, RRC,
+-- NAS, ...) observed by an E2 node, reported over RIC Indications.
+--
+-- Information model (cf. OpenTelemetry):
+--   Indication header  = resource / scope: collection time, schema
+--                        version, sequence and drop accounting
+--   UEEventGroup       = the events of one UE (or of no UE) in the
+--                        indication, with the UE reference and cell
+--                        sent once for the group
+--   Event              = one observed PDU (log record), with its own
+--                        sequence number and time offset
+--   MessageLayer       = the messages nested in the PDU, outermost
+--                        first (e.g. F1AP -> RRC -> NAS)
+--   Attribute          = typed protocol value, identified by an
+--                        AttributeID that the RAN Function Definition
+--                        maps to a namespaced name ("rrc.est_cause"),
+--                        type and stability level
+--   UE-Reference.ranUEID correlates the events of one UE connection
+--                        (the role of a trace ID)
+--
+-- Extensibility: new protocol values are new AttributeIDs (no change
+-- to this module); typed IEs are added after the extension markers;
+-- new report kinds (e.g. procedure spans) are new formats. Receivers
+-- ignore unknown attributes.
+--
+-- Version 1.00, draft.
+-- **************************************************************
+
+E2SM-CP-IEs {
+iso(1) identified-organization(3) dod(6) internet(1) private(4) enterprise(1) example(32473) e2(1) version1(1) e2sm(2) e2sm-CP-IEs(1)}
+-- NOTE: placeholder OID under the IANA documentation enterprise
+-- number 32473 (RFC 5612). Replace with a registered arc before use.
+
+DEFINITIONS AUTOMATIC TAGS ::=
+
+BEGIN
+
+IMPORTS
+	CGI,
+	GNB-CU-UE-F1AP-ID,
+	GNB-DU-ID,
+	InterfaceType,
+	Interface-MessageID,
+	RANfunction-Name,
+	RANUEID,
+	RIC-Format-Type,
+	RIC-Style-Name,
+	RIC-Style-Type,
+	RNTI-Value,
+	RRC-MessageID,
+	RRCclass-NR,
+	UEID
+FROM E2SM-COMMON-IEs;
+
+
+-- **************************************************************
+-- Constants
+-- **************************************************************
+
+maxnoofRICStyles			INTEGER ::= 63
+maxnoofAttributes			INTEGER ::= 65535
+maxnoofMessageIDs			INTEGER ::= 65535
+maxnoofMessageLayers		INTEGER ::= 8
+maxnoofEvents				INTEGER ::= 65535
+maxnoofUEs					INTEGER ::= 65535
+maxnoofCells				INTEGER ::= 512
+
+
+-- **************************************************************
+-- Common IEs of this module
+-- **************************************************************
+
+-- NTP format: 32-bit seconds since 1900-01-01 + 32-bit fraction,
+-- as the E2AP TimeStamp-like IEs.
+TimeStamp ::= OCTET STRING (SIZE(8))
+
+-- Event time in microseconds since the collectionStartTime of the
+-- indication header (up to ~71 minutes).
+TimeOffset ::= INTEGER (0..4294967295)
+
+-- Schema of the attribute set, e.g. "mobiflow/1.0". VisibleString,
+-- not PrintableString, so that names may contain '_' and '#'.
+SchemaVersion ::= VisibleString (SIZE(1..64, ...))
+
+-- Per subscription, incremented by one for each reported event, so a
+-- gap shows lost indications.
+SequenceNumber ::= INTEGER (0..4294967295)
+
+Direction ::= ENUMERATED {uplink, downlink, ...}
+
+Protocol ::= ENUMERATED {f1ap, ngap, e1ap, xnap, nr-rrc, lte-rrc, nas-5gs, nas-eps, ...}
+
+SecurityProtection ::= ENUMERATED {
+	none,
+	integrityProtected,
+	ciphered,
+	integrityProtectedAndCiphered,
+	...
+}
+
+GNB-DU-UE-F1AP-ID ::= INTEGER (0..4294967295)
+
+
+-- --------------------------------------------------------------
+-- Message identification
+-- --------------------------------------------------------------
+
+MessageID ::= CHOICE {
+	interfaceMessage		InterfaceMessage-ID,
+	rrcMessage				RRC-MessageID,
+	nasMessage				NAS-MessageID,
+	opaqueMessage			OpaqueMessage-ID,
+	...
+}
+
+-- F1AP, NGAP, E1AP, XnAP, ...: interfaceProcedureID is the
+-- procedure code.
+InterfaceMessage-ID ::= SEQUENCE {
+	interfaceType			InterfaceType,
+	messageID				Interface-MessageID,
+	...
+}
+
+-- TS 24.501 / TS 24.301: extended protocol discriminator (e.g. 126
+-- 5GMM, 46 5GSM) and message type of the plain NAS message.
+NAS-MessageID ::= SEQUENCE {
+	protocolDiscriminator	INTEGER (0..255),
+	messageType				INTEGER (0..255),
+	...
+}
+
+-- A message that was observed but not decoded, e.g. ciphered RRC.
+OpaqueMessage-ID ::= SEQUENCE {
+	protocol				Protocol,
+	rrcClass				RRCclass-NR						OPTIONAL,
+	reason					ENUMERATED {ciphered, decodingError, unsupported, ...},
+	...
+}
+
+
+-- --------------------------------------------------------------
+-- UE reference
+-- --------------------------------------------------------------
+
+-- ranUEID is assigned by the E2 node, unique per UE connection: a
+-- reused F1AP UE ID gets a new ranUEID. The other IDs are included
+-- when known (the gNB-CU UE F1AP ID is not known before the first
+-- DL message, so UEID-GNB-DU cannot be used as the key).
+UE-Reference ::= SEQUENCE {
+	ranUEID					RANUEID,
+	gNB-DU-ID				GNB-DU-ID						OPTIONAL,
+	gNB-DU-UE-F1AP-ID		GNB-DU-UE-F1AP-ID				OPTIONAL,
+	gNB-CU-UE-F1AP-ID		GNB-CU-UE-F1AP-ID				OPTIONAL,
+	c-RNTI					RNTI-Value						OPTIONAL,
+	ueID					UEID							OPTIONAL,
+	...
+}
+
+
+-- --------------------------------------------------------------
+-- Attributes
+-- --------------------------------------------------------------
+
+AttributeID ::= INTEGER (1..65535, ...)
+
+-- Namespaced, e.g. "f1ap.gnb_du_ue_f1ap_id", "nas.5gmm.msg_type".
+AttributeName ::= VisibleString (SIZE(1..150, ...))
+
+AttributeValueType ::= ENUMERATED {
+	boolean,
+	integer,
+	real,
+	bitString,
+	octetString,
+	printableString,
+	...
+}
+
+Stability ::= ENUMERATED {experimental, stable, deprecated, ...}
+
+AttributeValue ::= CHOICE {
+	valueBoolean			BOOLEAN,
+	valueInt				INTEGER,
+	valueReal				REAL,
+	valueBitS				BIT STRING,
+	valueOctS				OCTET STRING,
+	valuePrintableString	PrintableString,
+	...
+}
+
+Attribute ::= SEQUENCE {
+	attributeID				AttributeID,
+	attributeValue			AttributeValue,
+	...
+}
+
+AttributeDefinition ::= SEQUENCE {
+	attributeID				AttributeID,
+	attributeName			AttributeName,
+	valueType				AttributeValueType,
+	stability				Stability,
+	unit					VisibleString (SIZE(1..32, ...))	OPTIONAL,
+	description				VisibleString (SIZE(1..150, ...))	OPTIONAL,
+	...
+}
+
+
+-- --------------------------------------------------------------
+-- Events
+-- --------------------------------------------------------------
+
+MessageLayer ::= SEQUENCE {
+	messageID				MessageID,
+	-- as observed on the wire (NAS security header) or derived from
+	-- the procedure (RRC after Security Mode Command)
+	protection				SecurityProtection				OPTIONAL,
+	attribute-List			SEQUENCE (SIZE(1..maxnoofAttributes)) OF Attribute		OPTIONAL,
+	...
+}
+
+-- One observed PDU. The UE and cell are those of its UEEventGroup;
+-- the sequence number gives the order across groups.
+Event ::= SEQUENCE {
+	sequenceNumber			SequenceNumber,
+	timeOffset				TimeOffset,
+	direction				Direction,
+	messageLayer-List		SEQUENCE (SIZE(1..maxnoofMessageLayers)) OF MessageLayer,
+	...
+}
+
+-- The events of one UE in an indication, in sequence number order.
+-- ueReference is absent for non-UE-associated messages (e.g. F1
+-- Setup), which carry node and cell attributes. ueReference holds the
+-- UE key (ranUEID) and the IDs known when the indication is built;
+-- IDs that change within the group (C-RNTI, cell) are attributes of
+-- the messages that carry them. An indication has at most one group
+-- per ranUEID and at most one group without ueReference.
+UEEventGroup ::= SEQUENCE {
+	ueReference				UE-Reference					OPTIONAL,
+	cellGlobalID			CGI								OPTIONAL,	-- serving cell, when known
+	event-List				SEQUENCE (SIZE(1..maxnoofEvents)) OF Event,
+	...
+}
+
+
+-- **************************************************************
+-- Event Trigger Definition
+-- **************************************************************
+
+-- Reporting is event-based only: control-plane messages are discrete
+-- events, so a periodic trigger would only add latency and empty
+-- reports; maxBatchDelay bounds the indication rate instead.
+-- Style 1: report upon events, optionally batched (format 1)
+E2SM-CP-EventTrigger ::= SEQUENCE {
+	ric-eventTrigger-formats		CHOICE {
+		eventTrigger-Format1		E2SM-CP-EventTrigger-Format1,
+		...
+	},
+	...
+}
+
+-- Report when an event is collected. An indication is sent once
+-- maxBatchSize events are pending or maxBatchDelay has elapsed since
+-- the first pending one; absent, each event is reported at once.
+E2SM-CP-EventTrigger-Format1 ::= SEQUENCE {
+	maxBatchSize				INTEGER (1..65535)				OPTIONAL,
+	maxBatchDelay				INTEGER (1..4294967295)			OPTIONAL,	-- ms
+	...
+}
+
+
+-- **************************************************************
+-- Action Definition
+-- **************************************************************
+
+E2SM-CP-ActionDefinition ::= SEQUENCE {
+	ric-Style-Type					RIC-Style-Type,
+	ric-actionDefinition-formats	CHOICE {
+		actionDefinition-Format1	E2SM-CP-ActionDefinition-Format1,
+		...
+	},
+	...
+}
+
+-- What to report. Absent lists mean everything.
+E2SM-CP-ActionDefinition-Format1 ::= SEQUENCE {
+	-- events containing at least one of these messages
+	message-List				SEQUENCE (SIZE(1..maxnoofMessageIDs)) OF MessageID		OPTIONAL,
+	-- attributes to include in the reported events
+	attributeID-List			SEQUENCE (SIZE(1..maxnoofAttributes)) OF AttributeID	OPTIONAL,
+	-- report messages that could not be decoded (OpaqueMessage-ID)
+	includeOpaqueMessages		BOOLEAN							OPTIONAL,
+	...
+}
+
+
+-- **************************************************************
+-- Indication Header
+-- **************************************************************
+
+E2SM-CP-IndicationHeader ::= SEQUENCE {
+	ric-indicationHeader-formats	CHOICE {
+		indicationHeader-Format1	E2SM-CP-IndicationHeader-Format1,
+		...
+	},
+	...
+}
+
+E2SM-CP-IndicationHeader-Format1 ::= SEQUENCE {
+	collectionStartTime			TimeStamp,
+	schemaVersion				SchemaVersion,
+	-- lowest sequenceNumber in the message (the next one to be
+	-- assigned if the message is empty)
+	firstSequenceNumber			SequenceNumber,
+	-- events lost before being reported (e.g. capture buffer
+	-- overrun), cumulative since the subscription started
+	droppedEventCount			INTEGER (0..4294967295),
+	cell-List					SEQUENCE (SIZE(1..maxnoofCells)) OF CGI			OPTIONAL,
+	...
+}
+
+
+-- **************************************************************
+-- Indication Message
+-- **************************************************************
+
+E2SM-CP-IndicationMessage ::= SEQUENCE {
+	ric-indicationMessage-formats	CHOICE {
+		indicationMessage-Format1	E2SM-CP-IndicationMessage-Format1,
+		...
+	},
+	...
+}
+
+-- A batch of events, grouped by UE. May be empty (e.g. to report
+-- dropped events alone).
+E2SM-CP-IndicationMessage-Format1 ::= SEQUENCE {
+	ueEventGroup-List			SEQUENCE (SIZE(0..maxnoofUEs)) OF UEEventGroup,
+	...
+}
+
+
+-- **************************************************************
+-- RAN Function Definition
+-- **************************************************************
+
+E2SM-CP-RANFunctionDefinition ::= SEQUENCE {
+	ranFunction-Name				RANfunction-Name,
+	schemaVersion					SchemaVersion,
+	ric-EventTriggerStyle-List		SEQUENCE (SIZE(1..maxnoofRICStyles)) OF RIC-EventTriggerStyle-Item,
+	ric-ReportStyle-List			SEQUENCE (SIZE(1..maxnoofRICStyles)) OF RIC-ReportStyle-Item,
+	-- the attribute registry: every AttributeID the node may report
+	attributeDefinition-List		SEQUENCE (SIZE(1..maxnoofAttributes)) OF AttributeDefinition,
+	-- the messages the node can observe and decode
+	supportedMessage-List			SEQUENCE (SIZE(1..maxnoofMessageIDs)) OF MessageID		OPTIONAL,
+	...
+}
+
+RIC-EventTriggerStyle-Item ::= SEQUENCE {
+	ric-EventTriggerStyle-Type		RIC-Style-Type,
+	ric-EventTriggerStyle-Name		RIC-Style-Name,
+	ric-EventTriggerFormat-Type		RIC-Format-Type,
+	...
+}
+
+-- Report style 1: control-plane message events (action format 1,
+-- header format 1, message format 1).
+RIC-ReportStyle-Item ::= SEQUENCE {
+	ric-ReportStyle-Type					RIC-Style-Type,
+	ric-ReportStyle-Name					RIC-Style-Name,
+	ric-SupportedEventTriggerStyle-List		SEQUENCE (SIZE(1..maxnoofRICStyles)) OF RIC-Style-Type,
+	ric-ActionFormat-Type					RIC-Format-Type,
+	ric-IndicationHeaderFormat-Type			RIC-Format-Type,
+	ric-IndicationMessageFormat-Type		RIC-Format-Type,
+	...
+}
+
+END
+-- ASN1STOP

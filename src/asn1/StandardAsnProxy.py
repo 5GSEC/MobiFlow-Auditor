@@ -3,8 +3,8 @@ from .AsnProxy import AsnProxy
 # ASN proxy for decoding / encoding O-RAN compliant related ASN data structures
 class StandardAsnProxy(AsnProxy):
 
-    def __init__(self, path_wrapper_c_exec):
-        super().__init__(path_wrapper_c_exec)
+    def __init__(self, path_wrapper_c_exec, path_cp_wrapper_c_exec=None):
+        super().__init__(path_wrapper_c_exec, path_cp_wrapper_c_exec)
 
     def decode_e2ap_pdu(self, hex_payload: str):
         return self.decode_asn_struct("E2AP_PDU", hex_payload)

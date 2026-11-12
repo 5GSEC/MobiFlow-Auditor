@@ -1,0 +1,432 @@
+ASN_MODULE_SRCS=	\
+	e2sm_cp/E2SM_CP_Beam-ID.c	\
+	e2sm_cp/E2SM_CP_Cell-RNTI.c	\
+	e2sm_cp/E2SM_CP_CGI.c	\
+	e2sm_cp/E2SM_CP_CoreCPID.c	\
+	e2sm_cp/E2SM_CP_InterfaceIdentifier.c	\
+	e2sm_cp/E2SM_CP_InterfaceID-NG.c	\
+	e2sm_cp/E2SM_CP_InterfaceID-Xn.c	\
+	e2sm_cp/E2SM_CP_InterfaceID-F1.c	\
+	e2sm_cp/E2SM_CP_InterfaceID-E1.c	\
+	e2sm_cp/E2SM_CP_InterfaceID-S1.c	\
+	e2sm_cp/E2SM_CP_InterfaceID-X2.c	\
+	e2sm_cp/E2SM_CP_InterfaceID-W1.c	\
+	e2sm_cp/E2SM_CP_Interface-MessageID.c	\
+	e2sm_cp/E2SM_CP_InterfaceType.c	\
+	e2sm_cp/E2SM_CP_GroupID.c	\
+	e2sm_cp/E2SM_CP_PartialUEID.c	\
+	e2sm_cp/E2SM_CP_QoSID.c	\
+	e2sm_cp/E2SM_CP_RANfunction-Name.c	\
+	e2sm_cp/E2SM_CP_RIC-Format-Type.c	\
+	e2sm_cp/E2SM_CP_RIC-Style-Type.c	\
+	e2sm_cp/E2SM_CP_RIC-Style-Name.c	\
+	e2sm_cp/E2SM_CP_RRC-MessageID.c	\
+	e2sm_cp/E2SM_CP_RRCclass-LTE.c	\
+	e2sm_cp/E2SM_CP_RRCclass-NR.c	\
+	e2sm_cp/E2SM_CP_ServingCell-ARFCN.c	\
+	e2sm_cp/E2SM_CP_ServingCell-PCI.c	\
+	e2sm_cp/E2SM_CP_UEID.c	\
+	e2sm_cp/E2SM_CP_UEID-GNB.c	\
+	e2sm_cp/E2SM_CP_UEID-GNB-CU-CP-E1AP-ID-List.c	\
+	e2sm_cp/E2SM_CP_UEID-GNB-CU-CP-E1AP-ID-Item.c	\
+	e2sm_cp/E2SM_CP_UEID-GNB-CU-F1AP-ID-List.c	\
+	e2sm_cp/E2SM_CP_UEID-GNB-CU-CP-F1AP-ID-Item.c	\
+	e2sm_cp/E2SM_CP_UEID-GNB-DU.c	\
+	e2sm_cp/E2SM_CP_UEID-GNB-CU-UP.c	\
+	e2sm_cp/E2SM_CP_UEID-NG-ENB.c	\
+	e2sm_cp/E2SM_CP_UEID-NG-ENB-DU.c	\
+	e2sm_cp/E2SM_CP_UEID-EN-GNB.c	\
+	e2sm_cp/E2SM_CP_UEID-ENB.c	\
+	e2sm_cp/E2SM_CP_ENB-ID.c	\
+	e2sm_cp/E2SM_CP_GlobalENB-ID.c	\
+	e2sm_cp/E2SM_CP_GUMMEI.c	\
+	e2sm_cp/E2SM_CP_MME-Group-ID.c	\
+	e2sm_cp/E2SM_CP_MME-Code.c	\
+	e2sm_cp/E2SM_CP_MME-UE-S1AP-ID.c	\
+	e2sm_cp/E2SM_CP_QCI.c	\
+	e2sm_cp/E2SM_CP_SubscriberProfileIDforRFP.c	\
+	e2sm_cp/E2SM_CP_EN-GNB-ID.c	\
+	e2sm_cp/E2SM_CP_ENB-UE-X2AP-ID.c	\
+	e2sm_cp/E2SM_CP_ENB-UE-X2AP-ID-Extension.c	\
+	e2sm_cp/E2SM_CP_E-UTRA-ARFCN.c	\
+	e2sm_cp/E2SM_CP_E-UTRA-PCI.c	\
+	e2sm_cp/E2SM_CP_E-UTRA-TAC.c	\
+	e2sm_cp/E2SM_CP_GlobalenGNB-ID.c	\
+	e2sm_cp/E2SM_CP_NGENB-CU-UE-W1AP-ID.c	\
+	e2sm_cp/E2SM_CP_NGENB-DU-ID.c	\
+	e2sm_cp/E2SM_CP_NR-SSB-Index.c	\
+	e2sm_cp/E2SM_CP_RNTI-Value.c	\
+	e2sm_cp/E2SM_CP_AMFPointer.c	\
+	e2sm_cp/E2SM_CP_AMFRegionID.c	\
+	e2sm_cp/E2SM_CP_AMFSetID.c	\
+	e2sm_cp/E2SM_CP_AMF-UE-NGAP-ID.c	\
+	e2sm_cp/E2SM_CP_EUTRACellIdentity.c	\
+	e2sm_cp/E2SM_CP_EUTRA-CGI.c	\
+	e2sm_cp/E2SM_CP_FiveQI.c	\
+	e2sm_cp/E2SM_CP_GlobalGNB-ID.c	\
+	e2sm_cp/E2SM_CP_GlobalNgENB-ID.c	\
+	e2sm_cp/E2SM_CP_GNB-ID.c	\
+	e2sm_cp/E2SM_CP_GUAMI.c	\
+	e2sm_cp/E2SM_CP_IndexToRFSP.c	\
+	e2sm_cp/E2SM_CP_NgENB-ID.c	\
+	e2sm_cp/E2SM_CP_NRCellIdentity.c	\
+	e2sm_cp/E2SM_CP_NR-CGI.c	\
+	e2sm_cp/E2SM_CP_PLMNIdentity.c	\
+	e2sm_cp/E2SM_CP_QosFlowIdentifier.c	\
+	e2sm_cp/E2SM_CP_SD.c	\
+	e2sm_cp/E2SM_CP_S-NSSAI.c	\
+	e2sm_cp/E2SM_CP_SST.c	\
+	e2sm_cp/E2SM_CP_NG-RANnodeUEXnAPID.c	\
+	e2sm_cp/E2SM_CP_GlobalNGRANNodeID.c	\
+	e2sm_cp/E2SM_CP_GNB-CU-CP-UE-E1AP-ID.c	\
+	e2sm_cp/E2SM_CP_GNB-CU-UP-ID.c	\
+	e2sm_cp/E2SM_CP_FiveGS-TAC.c	\
+	e2sm_cp/E2SM_CP_FreqBandNrItem.c	\
+	e2sm_cp/E2SM_CP_GNB-CU-UE-F1AP-ID.c	\
+	e2sm_cp/E2SM_CP_GNB-DU-ID.c	\
+	e2sm_cp/E2SM_CP_NR-PCI.c	\
+	e2sm_cp/E2SM_CP_NR-ARFCN.c	\
+	e2sm_cp/E2SM_CP_NRFrequencyBand-List.c	\
+	e2sm_cp/E2SM_CP_NRFrequencyBandItem.c	\
+	e2sm_cp/E2SM_CP_NRFrequencyInfo.c	\
+	e2sm_cp/E2SM_CP_NRFrequencyShift7p5khz.c	\
+	e2sm_cp/E2SM_CP_RANUEID.c	\
+	e2sm_cp/E2SM_CP_SupportedSULBandList.c	\
+	e2sm_cp/E2SM_CP_SupportedSULFreqBandItem.c	\
+	e2sm_cp/E2SM_CP_TimeStamp.c	\
+	e2sm_cp/E2SM_CP_TimeOffset.c	\
+	e2sm_cp/E2SM_CP_SchemaVersion.c	\
+	e2sm_cp/E2SM_CP_SequenceNumber.c	\
+	e2sm_cp/E2SM_CP_Direction.c	\
+	e2sm_cp/E2SM_CP_Protocol.c	\
+	e2sm_cp/E2SM_CP_SecurityProtection.c	\
+	e2sm_cp/E2SM_CP_GNB-DU-UE-F1AP-ID.c	\
+	e2sm_cp/E2SM_CP_MessageID.c	\
+	e2sm_cp/E2SM_CP_InterfaceMessage-ID.c	\
+	e2sm_cp/E2SM_CP_NAS-MessageID.c	\
+	e2sm_cp/E2SM_CP_OpaqueMessage-ID.c	\
+	e2sm_cp/E2SM_CP_UE-Reference.c	\
+	e2sm_cp/E2SM_CP_AttributeID.c	\
+	e2sm_cp/E2SM_CP_AttributeName.c	\
+	e2sm_cp/E2SM_CP_AttributeValueType.c	\
+	e2sm_cp/E2SM_CP_Stability.c	\
+	e2sm_cp/E2SM_CP_AttributeValue.c	\
+	e2sm_cp/E2SM_CP_Attribute.c	\
+	e2sm_cp/E2SM_CP_AttributeDefinition.c	\
+	e2sm_cp/E2SM_CP_MessageLayer.c	\
+	e2sm_cp/E2SM_CP_Event.c	\
+	e2sm_cp/E2SM_CP_UEEventGroup.c	\
+	e2sm_cp/E2SM_CP_E2SM-CP-EventTrigger.c	\
+	e2sm_cp/E2SM_CP_E2SM-CP-EventTrigger-Format1.c	\
+	e2sm_cp/E2SM_CP_E2SM-CP-ActionDefinition.c	\
+	e2sm_cp/E2SM_CP_E2SM-CP-ActionDefinition-Format1.c	\
+	e2sm_cp/E2SM_CP_E2SM-CP-IndicationHeader.c	\
+	e2sm_cp/E2SM_CP_E2SM-CP-IndicationHeader-Format1.c	\
+	e2sm_cp/E2SM_CP_E2SM-CP-IndicationMessage.c	\
+	e2sm_cp/E2SM_CP_E2SM-CP-IndicationMessage-Format1.c	\
+	e2sm_cp/E2SM_CP_E2SM-CP-RANFunctionDefinition.c	\
+	e2sm_cp/E2SM_CP_RIC-EventTriggerStyle-Item.c	\
+	e2sm_cp/E2SM_CP_RIC-ReportStyle-Item.c	\
+	e2sm_cp/E2SM_CP_EXTERNAL.c
+
+ASN_MODULE_HDRS=	\
+	e2sm_cp/E2SM_CP_Beam-ID.h	\
+	e2sm_cp/E2SM_CP_Cell-RNTI.h	\
+	e2sm_cp/E2SM_CP_CGI.h	\
+	e2sm_cp/E2SM_CP_CoreCPID.h	\
+	e2sm_cp/E2SM_CP_InterfaceIdentifier.h	\
+	e2sm_cp/E2SM_CP_InterfaceID-NG.h	\
+	e2sm_cp/E2SM_CP_InterfaceID-Xn.h	\
+	e2sm_cp/E2SM_CP_InterfaceID-F1.h	\
+	e2sm_cp/E2SM_CP_InterfaceID-E1.h	\
+	e2sm_cp/E2SM_CP_InterfaceID-S1.h	\
+	e2sm_cp/E2SM_CP_InterfaceID-X2.h	\
+	e2sm_cp/E2SM_CP_InterfaceID-W1.h	\
+	e2sm_cp/E2SM_CP_Interface-MessageID.h	\
+	e2sm_cp/E2SM_CP_InterfaceType.h	\
+	e2sm_cp/E2SM_CP_GroupID.h	\
+	e2sm_cp/E2SM_CP_PartialUEID.h	\
+	e2sm_cp/E2SM_CP_QoSID.h	\
+	e2sm_cp/E2SM_CP_RANfunction-Name.h	\
+	e2sm_cp/E2SM_CP_RIC-Format-Type.h	\
+	e2sm_cp/E2SM_CP_RIC-Style-Type.h	\
+	e2sm_cp/E2SM_CP_RIC-Style-Name.h	\
+	e2sm_cp/E2SM_CP_RRC-MessageID.h	\
+	e2sm_cp/E2SM_CP_RRCclass-LTE.h	\
+	e2sm_cp/E2SM_CP_RRCclass-NR.h	\
+	e2sm_cp/E2SM_CP_ServingCell-ARFCN.h	\
+	e2sm_cp/E2SM_CP_ServingCell-PCI.h	\
+	e2sm_cp/E2SM_CP_UEID.h	\
+	e2sm_cp/E2SM_CP_UEID-GNB.h	\
+	e2sm_cp/E2SM_CP_UEID-GNB-CU-CP-E1AP-ID-List.h	\
+	e2sm_cp/E2SM_CP_UEID-GNB-CU-CP-E1AP-ID-Item.h	\
+	e2sm_cp/E2SM_CP_UEID-GNB-CU-F1AP-ID-List.h	\
+	e2sm_cp/E2SM_CP_UEID-GNB-CU-CP-F1AP-ID-Item.h	\
+	e2sm_cp/E2SM_CP_UEID-GNB-DU.h	\
+	e2sm_cp/E2SM_CP_UEID-GNB-CU-UP.h	\
+	e2sm_cp/E2SM_CP_UEID-NG-ENB.h	\
+	e2sm_cp/E2SM_CP_UEID-NG-ENB-DU.h	\
+	e2sm_cp/E2SM_CP_UEID-EN-GNB.h	\
+	e2sm_cp/E2SM_CP_UEID-ENB.h	\
+	e2sm_cp/E2SM_CP_ENB-ID.h	\
+	e2sm_cp/E2SM_CP_GlobalENB-ID.h	\
+	e2sm_cp/E2SM_CP_GUMMEI.h	\
+	e2sm_cp/E2SM_CP_MME-Group-ID.h	\
+	e2sm_cp/E2SM_CP_MME-Code.h	\
+	e2sm_cp/E2SM_CP_MME-UE-S1AP-ID.h	\
+	e2sm_cp/E2SM_CP_QCI.h	\
+	e2sm_cp/E2SM_CP_SubscriberProfileIDforRFP.h	\
+	e2sm_cp/E2SM_CP_EN-GNB-ID.h	\
+	e2sm_cp/E2SM_CP_ENB-UE-X2AP-ID.h	\
+	e2sm_cp/E2SM_CP_ENB-UE-X2AP-ID-Extension.h	\
+	e2sm_cp/E2SM_CP_E-UTRA-ARFCN.h	\
+	e2sm_cp/E2SM_CP_E-UTRA-PCI.h	\
+	e2sm_cp/E2SM_CP_E-UTRA-TAC.h	\
+	e2sm_cp/E2SM_CP_GlobalenGNB-ID.h	\
+	e2sm_cp/E2SM_CP_NGENB-CU-UE-W1AP-ID.h	\
+	e2sm_cp/E2SM_CP_NGENB-DU-ID.h	\
+	e2sm_cp/E2SM_CP_NR-SSB-Index.h	\
+	e2sm_cp/E2SM_CP_RNTI-Value.h	\
+	e2sm_cp/E2SM_CP_AMFPointer.h	\
+	e2sm_cp/E2SM_CP_AMFRegionID.h	\
+	e2sm_cp/E2SM_CP_AMFSetID.h	\
+	e2sm_cp/E2SM_CP_AMF-UE-NGAP-ID.h	\
+	e2sm_cp/E2SM_CP_EUTRACellIdentity.h	\
+	e2sm_cp/E2SM_CP_EUTRA-CGI.h	\
+	e2sm_cp/E2SM_CP_FiveQI.h	\
+	e2sm_cp/E2SM_CP_GlobalGNB-ID.h	\
+	e2sm_cp/E2SM_CP_GlobalNgENB-ID.h	\
+	e2sm_cp/E2SM_CP_GNB-ID.h	\
+	e2sm_cp/E2SM_CP_GUAMI.h	\
+	e2sm_cp/E2SM_CP_IndexToRFSP.h	\
+	e2sm_cp/E2SM_CP_NgENB-ID.h	\
+	e2sm_cp/E2SM_CP_NRCellIdentity.h	\
+	e2sm_cp/E2SM_CP_NR-CGI.h	\
+	e2sm_cp/E2SM_CP_PLMNIdentity.h	\
+	e2sm_cp/E2SM_CP_QosFlowIdentifier.h	\
+	e2sm_cp/E2SM_CP_SD.h	\
+	e2sm_cp/E2SM_CP_S-NSSAI.h	\
+	e2sm_cp/E2SM_CP_SST.h	\
+	e2sm_cp/E2SM_CP_NG-RANnodeUEXnAPID.h	\
+	e2sm_cp/E2SM_CP_GlobalNGRANNodeID.h	\
+	e2sm_cp/E2SM_CP_GNB-CU-CP-UE-E1AP-ID.h	\
+	e2sm_cp/E2SM_CP_GNB-CU-UP-ID.h	\
+	e2sm_cp/E2SM_CP_FiveGS-TAC.h	\
+	e2sm_cp/E2SM_CP_FreqBandNrItem.h	\
+	e2sm_cp/E2SM_CP_GNB-CU-UE-F1AP-ID.h	\
+	e2sm_cp/E2SM_CP_GNB-DU-ID.h	\
+	e2sm_cp/E2SM_CP_NR-PCI.h	\
+	e2sm_cp/E2SM_CP_NR-ARFCN.h	\
+	e2sm_cp/E2SM_CP_NRFrequencyBand-List.h	\
+	e2sm_cp/E2SM_CP_NRFrequencyBandItem.h	\
+	e2sm_cp/E2SM_CP_NRFrequencyInfo.h	\
+	e2sm_cp/E2SM_CP_NRFrequencyShift7p5khz.h	\
+	e2sm_cp/E2SM_CP_RANUEID.h	\
+	e2sm_cp/E2SM_CP_SupportedSULBandList.h	\
+	e2sm_cp/E2SM_CP_SupportedSULFreqBandItem.h	\
+	e2sm_cp/E2SM_CP_TimeStamp.h	\
+	e2sm_cp/E2SM_CP_TimeOffset.h	\
+	e2sm_cp/E2SM_CP_SchemaVersion.h	\
+	e2sm_cp/E2SM_CP_SequenceNumber.h	\
+	e2sm_cp/E2SM_CP_Direction.h	\
+	e2sm_cp/E2SM_CP_Protocol.h	\
+	e2sm_cp/E2SM_CP_SecurityProtection.h	\
+	e2sm_cp/E2SM_CP_GNB-DU-UE-F1AP-ID.h	\
+	e2sm_cp/E2SM_CP_MessageID.h	\
+	e2sm_cp/E2SM_CP_InterfaceMessage-ID.h	\
+	e2sm_cp/E2SM_CP_NAS-MessageID.h	\
+	e2sm_cp/E2SM_CP_OpaqueMessage-ID.h	\
+	e2sm_cp/E2SM_CP_UE-Reference.h	\
+	e2sm_cp/E2SM_CP_AttributeID.h	\
+	e2sm_cp/E2SM_CP_AttributeName.h	\
+	e2sm_cp/E2SM_CP_AttributeValueType.h	\
+	e2sm_cp/E2SM_CP_Stability.h	\
+	e2sm_cp/E2SM_CP_AttributeValue.h	\
+	e2sm_cp/E2SM_CP_Attribute.h	\
+	e2sm_cp/E2SM_CP_AttributeDefinition.h	\
+	e2sm_cp/E2SM_CP_MessageLayer.h	\
+	e2sm_cp/E2SM_CP_Event.h	\
+	e2sm_cp/E2SM_CP_UEEventGroup.h	\
+	e2sm_cp/E2SM_CP_E2SM-CP-EventTrigger.h	\
+	e2sm_cp/E2SM_CP_E2SM-CP-EventTrigger-Format1.h	\
+	e2sm_cp/E2SM_CP_E2SM-CP-ActionDefinition.h	\
+	e2sm_cp/E2SM_CP_E2SM-CP-ActionDefinition-Format1.h	\
+	e2sm_cp/E2SM_CP_E2SM-CP-IndicationHeader.h	\
+	e2sm_cp/E2SM_CP_E2SM-CP-IndicationHeader-Format1.h	\
+	e2sm_cp/E2SM_CP_E2SM-CP-IndicationMessage.h	\
+	e2sm_cp/E2SM_CP_E2SM-CP-IndicationMessage-Format1.h	\
+	e2sm_cp/E2SM_CP_E2SM-CP-RANFunctionDefinition.h	\
+	e2sm_cp/E2SM_CP_RIC-EventTriggerStyle-Item.h	\
+	e2sm_cp/E2SM_CP_RIC-ReportStyle-Item.h	\
+	e2sm_cp/E2SM_CP_EXTERNAL.h
+
+ASN_MODULE_HDRS+=e2sm_cp/ANY.h
+ASN_MODULE_SRCS+=e2sm_cp/ANY.c
+ASN_MODULE_HDRS+=e2sm_cp/OCTET_STRING.h
+ASN_MODULE_HDRS+=e2sm_cp/OPEN_TYPE.h
+ASN_MODULE_SRCS+=e2sm_cp/OPEN_TYPE.c
+ASN_MODULE_HDRS+=e2sm_cp/constr_CHOICE.h
+ASN_MODULE_HDRS+=e2sm_cp/BOOLEAN.h
+ASN_MODULE_SRCS+=e2sm_cp/BOOLEAN.c
+ASN_MODULE_HDRS+=e2sm_cp/ENUMERATED.h
+ASN_MODULE_SRCS+=e2sm_cp/ENUMERATED.c
+ASN_MODULE_HDRS+=e2sm_cp/INTEGER.h
+ASN_MODULE_HDRS+=e2sm_cp/NativeEnumerated.h
+ASN_MODULE_HDRS+=e2sm_cp/GraphicString.h
+ASN_MODULE_SRCS+=e2sm_cp/GraphicString.c
+ASN_MODULE_SRCS+=e2sm_cp/INTEGER.c
+ASN_MODULE_SRCS+=e2sm_cp/NativeEnumerated.c
+ASN_MODULE_HDRS+=e2sm_cp/NativeInteger.h
+ASN_MODULE_SRCS+=e2sm_cp/NativeInteger.c
+ASN_MODULE_HDRS+=e2sm_cp/NativeReal.h
+ASN_MODULE_SRCS+=e2sm_cp/NativeReal.c
+ASN_MODULE_HDRS+=e2sm_cp/REAL.h
+ASN_MODULE_HDRS+=e2sm_cp/OBJECT_IDENTIFIER.h
+ASN_MODULE_SRCS+=e2sm_cp/OBJECT_IDENTIFIER.c
+ASN_MODULE_HDRS+=e2sm_cp/asn_codecs_prim.h
+ASN_MODULE_HDRS+=e2sm_cp/ObjectDescriptor.h
+ASN_MODULE_SRCS+=e2sm_cp/ObjectDescriptor.c
+ASN_MODULE_HDRS+=e2sm_cp/PrintableString.h
+ASN_MODULE_SRCS+=e2sm_cp/PrintableString.c
+ASN_MODULE_SRCS+=e2sm_cp/REAL.c
+ASN_MODULE_HDRS+=e2sm_cp/VisibleString.h
+ASN_MODULE_SRCS+=e2sm_cp/VisibleString.c
+ASN_MODULE_HDRS+=e2sm_cp/asn_SEQUENCE_OF.h
+ASN_MODULE_SRCS+=e2sm_cp/asn_SEQUENCE_OF.c
+ASN_MODULE_HDRS+=e2sm_cp/asn_SET_OF.h
+ASN_MODULE_SRCS+=e2sm_cp/asn_SET_OF.c
+ASN_MODULE_SRCS+=e2sm_cp/constr_CHOICE.c
+ASN_MODULE_HDRS+=e2sm_cp/constr_SEQUENCE.h
+ASN_MODULE_SRCS+=e2sm_cp/constr_SEQUENCE.c
+ASN_MODULE_HDRS+=e2sm_cp/constr_SEQUENCE_OF.h
+ASN_MODULE_SRCS+=e2sm_cp/constr_SEQUENCE_OF.c
+ASN_MODULE_HDRS+=e2sm_cp/constr_SET_OF.h
+ASN_MODULE_SRCS+=e2sm_cp/constr_SET_OF.c
+ASN_MODULE_HDRS+=e2sm_cp/asn_application.h
+ASN_MODULE_SRCS+=e2sm_cp/asn_application.c
+ASN_MODULE_HDRS+=e2sm_cp/asn_ioc.h
+ASN_MODULE_HDRS+=e2sm_cp/asn_system.h
+ASN_MODULE_HDRS+=e2sm_cp/asn_codecs.h
+ASN_MODULE_HDRS+=e2sm_cp/asn_internal.h
+ASN_MODULE_SRCS+=e2sm_cp/asn_internal.c
+ASN_MODULE_HDRS+=e2sm_cp/asn_bit_data.h
+ASN_MODULE_SRCS+=e2sm_cp/asn_bit_data.c
+ASN_MODULE_SRCS+=e2sm_cp/OCTET_STRING.c
+ASN_MODULE_HDRS+=e2sm_cp/BIT_STRING.h
+ASN_MODULE_SRCS+=e2sm_cp/BIT_STRING.c
+ASN_MODULE_SRCS+=e2sm_cp/asn_codecs_prim.c
+ASN_MODULE_HDRS+=e2sm_cp/ber_tlv_length.h
+ASN_MODULE_SRCS+=e2sm_cp/ber_tlv_length.c
+ASN_MODULE_HDRS+=e2sm_cp/ber_tlv_tag.h
+ASN_MODULE_SRCS+=e2sm_cp/ber_tlv_tag.c
+ASN_MODULE_HDRS+=e2sm_cp/constr_TYPE.h
+ASN_MODULE_SRCS+=e2sm_cp/constr_TYPE.c
+ASN_MODULE_HDRS+=e2sm_cp/constraints.h
+ASN_MODULE_SRCS+=e2sm_cp/constraints.c
+ASN_MODULE_HDRS+=e2sm_cp/xer_support.h
+ASN_MODULE_HDRS+=e2sm_cp/xer_decoder.h
+ASN_MODULE_HDRS+=e2sm_cp/xer_encoder.h
+ASN_MODULE_SRCS+=e2sm_cp/xer_support.c
+ASN_MODULE_SRCS+=e2sm_cp/xer_decoder.c
+ASN_MODULE_SRCS+=e2sm_cp/xer_encoder.c
+ASN_MODULE_SRCS+=e2sm_cp/ANY_xer.c
+ASN_MODULE_SRCS+=e2sm_cp/BIT_STRING_xer.c
+ASN_MODULE_SRCS+=e2sm_cp/BOOLEAN_xer.c
+ASN_MODULE_SRCS+=e2sm_cp/INTEGER_xer.c
+ASN_MODULE_SRCS+=e2sm_cp/NativeEnumerated_xer.c
+ASN_MODULE_SRCS+=e2sm_cp/NativeInteger_xer.c
+ASN_MODULE_SRCS+=e2sm_cp/NativeReal_xer.c
+ASN_MODULE_SRCS+=e2sm_cp/OBJECT_IDENTIFIER_xer.c
+ASN_MODULE_SRCS+=e2sm_cp/OCTET_STRING_xer.c
+ASN_MODULE_SRCS+=e2sm_cp/OPEN_TYPE_xer.c
+ASN_MODULE_SRCS+=e2sm_cp/REAL_xer.c
+ASN_MODULE_SRCS+=e2sm_cp/asn_codecs_prim_xer.c
+ASN_MODULE_SRCS+=e2sm_cp/constr_CHOICE_xer.c
+ASN_MODULE_SRCS+=e2sm_cp/constr_SEQUENCE_OF_xer.c
+ASN_MODULE_SRCS+=e2sm_cp/constr_SEQUENCE_xer.c
+ASN_MODULE_SRCS+=e2sm_cp/constr_SET_OF_xer.c
+ASN_MODULE_HDRS+=e2sm_cp/per_decoder.h
+ASN_MODULE_HDRS+=e2sm_cp/per_encoder.h
+ASN_MODULE_HDRS+=e2sm_cp/per_support.h
+ASN_MODULE_HDRS+=e2sm_cp/per_opentype.h
+ASN_MODULE_SRCS+=e2sm_cp/per_decoder.c
+ASN_MODULE_SRCS+=e2sm_cp/per_encoder.c
+ASN_MODULE_SRCS+=e2sm_cp/per_support.c
+ASN_MODULE_SRCS+=e2sm_cp/per_opentype.c
+ASN_MODULE_HDRS+=e2sm_cp/uper_decoder.h
+ASN_MODULE_HDRS+=e2sm_cp/uper_encoder.h
+ASN_MODULE_HDRS+=e2sm_cp/uper_support.h
+ASN_MODULE_HDRS+=e2sm_cp/uper_opentype.h
+ASN_MODULE_SRCS+=e2sm_cp/uper_decoder.c
+ASN_MODULE_SRCS+=e2sm_cp/uper_encoder.c
+ASN_MODULE_SRCS+=e2sm_cp/uper_support.c
+ASN_MODULE_SRCS+=e2sm_cp/uper_opentype.c
+ASN_MODULE_SRCS+=e2sm_cp/ANY_uper.c
+ASN_MODULE_SRCS+=e2sm_cp/BIT_STRING_uper.c
+ASN_MODULE_SRCS+=e2sm_cp/BOOLEAN_uper.c
+ASN_MODULE_SRCS+=e2sm_cp/ENUMERATED_uper.c
+ASN_MODULE_SRCS+=e2sm_cp/INTEGER_uper.c
+ASN_MODULE_SRCS+=e2sm_cp/NativeEnumerated_uper.c
+ASN_MODULE_SRCS+=e2sm_cp/NativeInteger_uper.c
+ASN_MODULE_SRCS+=e2sm_cp/NativeReal_uper.c
+ASN_MODULE_SRCS+=e2sm_cp/OCTET_STRING_uper.c
+ASN_MODULE_SRCS+=e2sm_cp/OPEN_TYPE_uper.c
+ASN_MODULE_SRCS+=e2sm_cp/REAL_uper.c
+ASN_MODULE_SRCS+=e2sm_cp/constr_CHOICE_uper.c
+ASN_MODULE_SRCS+=e2sm_cp/constr_SEQUENCE_OF_uper.c
+ASN_MODULE_SRCS+=e2sm_cp/constr_SEQUENCE_uper.c
+ASN_MODULE_SRCS+=e2sm_cp/constr_SET_OF_uper.c
+ASN_MODULE_HDRS+=e2sm_cp/aper_decoder.h
+ASN_MODULE_HDRS+=e2sm_cp/aper_encoder.h
+ASN_MODULE_HDRS+=e2sm_cp/aper_support.h
+ASN_MODULE_HDRS+=e2sm_cp/aper_opentype.h
+ASN_MODULE_SRCS+=e2sm_cp/aper_decoder.c
+ASN_MODULE_SRCS+=e2sm_cp/aper_encoder.c
+ASN_MODULE_SRCS+=e2sm_cp/aper_support.c
+ASN_MODULE_SRCS+=e2sm_cp/aper_opentype.c
+ASN_MODULE_SRCS+=e2sm_cp/ANY_aper.c
+ASN_MODULE_SRCS+=e2sm_cp/BOOLEAN_aper.c
+ASN_MODULE_SRCS+=e2sm_cp/ENUMERATED_aper.c
+ASN_MODULE_SRCS+=e2sm_cp/INTEGER_aper.c
+ASN_MODULE_SRCS+=e2sm_cp/NativeEnumerated_aper.c
+ASN_MODULE_SRCS+=e2sm_cp/NativeInteger_aper.c
+ASN_MODULE_SRCS+=e2sm_cp/NativeReal_aper.c
+ASN_MODULE_SRCS+=e2sm_cp/OCTET_STRING_aper.c
+ASN_MODULE_SRCS+=e2sm_cp/OPEN_TYPE_aper.c
+ASN_MODULE_SRCS+=e2sm_cp/REAL_aper.c
+ASN_MODULE_SRCS+=e2sm_cp/constr_CHOICE_aper.c
+ASN_MODULE_SRCS+=e2sm_cp/constr_SEQUENCE_OF_aper.c
+ASN_MODULE_SRCS+=e2sm_cp/constr_SEQUENCE_aper.c
+ASN_MODULE_SRCS+=e2sm_cp/constr_SET_OF_aper.c
+ASN_MODULE_SRCS+=e2sm_cp/BIT_STRING_print.c
+ASN_MODULE_SRCS+=e2sm_cp/BOOLEAN_print.c
+ASN_MODULE_SRCS+=e2sm_cp/INTEGER_print.c
+ASN_MODULE_SRCS+=e2sm_cp/NativeInteger_print.c
+ASN_MODULE_SRCS+=e2sm_cp/NativeReal_print.c
+ASN_MODULE_SRCS+=e2sm_cp/OBJECT_IDENTIFIER_print.c
+ASN_MODULE_SRCS+=e2sm_cp/OCTET_STRING_print.c
+ASN_MODULE_SRCS+=e2sm_cp/REAL_print.c
+ASN_MODULE_SRCS+=e2sm_cp/constr_CHOICE_print.c
+ASN_MODULE_SRCS+=e2sm_cp/constr_SEQUENCE_print.c
+ASN_MODULE_SRCS+=e2sm_cp/constr_SET_OF_print.c
+ASN_MODULE_HDRS+=e2sm_cp/asn_random_fill.h
+ASN_MODULE_SRCS+=e2sm_cp/asn_random_fill.c
+ASN_MODULE_SRCS+=e2sm_cp/BIT_STRING_rfill.c
+ASN_MODULE_SRCS+=e2sm_cp/BOOLEAN_rfill.c
+ASN_MODULE_SRCS+=e2sm_cp/INTEGER_rfill.c
+ASN_MODULE_SRCS+=e2sm_cp/NativeInteger_rfill.c
+ASN_MODULE_SRCS+=e2sm_cp/NativeReal_rfill.c
+ASN_MODULE_SRCS+=e2sm_cp/OBJECT_IDENTIFIER_rfill.c
+ASN_MODULE_SRCS+=e2sm_cp/OCTET_STRING_rfill.c
+ASN_MODULE_SRCS+=e2sm_cp/REAL_rfill.c
+ASN_MODULE_SRCS+=e2sm_cp/constr_CHOICE_rfill.c
+ASN_MODULE_SRCS+=e2sm_cp/constr_SEQUENCE_rfill.c
+ASN_MODULE_SRCS+=e2sm_cp/constr_SET_OF_rfill.c
+
+ASN_MODULE_CFLAGS=-DASN_DISABLE_BER_SUPPORT -DASN_DISABLE_OER_SUPPORT 
+
+lib_LTLIBRARIES+=libasncodec.la
+libasncodec_la_SOURCES=$(ASN_MODULE_SRCS) $(ASN_MODULE_HDRS)
+libasncodec_la_CPPFLAGS=-I$(top_srcdir)/e2sm_cp/
+libasncodec_la_CFLAGS=$(ASN_MODULE_CFLAGS)
+libasncodec_la_LDFLAGS=-lm

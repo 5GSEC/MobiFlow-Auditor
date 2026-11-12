@@ -112,3 +112,6 @@ coverage-reports
 .pydevproject
 .settings
 
+
+# E2SM-CP ASN.1 wrapper (built by src/asn1/wrapper_compile.sh)
+src/asn1/wrapper_cp
