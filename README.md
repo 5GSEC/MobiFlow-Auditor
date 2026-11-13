@@ -24,7 +24,7 @@ We also have an old version at branch `main` implemented for the [ONOS RIC](http
 
 ## MobiFlow Structure
 
-The current MobiFlow message definition is defined in [mobiflow.py](./src/mobiflow/mobiflow.py#L60). It mainly collects (1) the fine-grained layer-3 (RRC and NAS) state transition information of UEs at the message level; (2) the aggregated flow-based statistics from the base stations. The MobiFlow telemetry report process is based on the E2SM-KPM (v2.0) service model (SM). 
+The current MobiFlow message definition is defined in [mobiflow.py](./src/mobiflow/mobiflow.py#L60). It mainly collects (1) the fine-grained layer-3 (RRC and NAS) state transition information of UEs at the message level; (2) the aggregated flow-based statistics from the base stations. MobiFlow telemetry is reported over the E2SM-CP service model (below); E2SM-KPM (v2.0) carries 3GPP measurements only. 
 
 ### E2SM-CP (experimental)
 
@@ -33,8 +33,9 @@ MobiFlow Auditor also subscribes to **E2SM-CP** (OID `1.3.6.1.4.1.32473.1.1.2.1`
 - The RAN functions to subscribe to are listed by OID in `ran.target_oid_list` ([init/config-file.json](./init/config-file.json)); each is subscribed with the service model of its OID (exact match: `1.3.6.1.4.1.53148.1.2.2.2` E2SM-KPM, `1.3.6.1.4.1.32473.1.1.2.1` E2SM-CP; other OIDs are skipped with a warning). E2SM-CP RAN functions are subscribed with every report style and attribute they define.
 - RIC indications are decoded at the E2AP layer by [IndicationHandler](./src/handler/IndicationHandler.py) and handed to [KpmIndicationHandler](./src/handler/KpmIndicationHandler.py) or [CpIndicationHandler](./src/handler/CpIndicationHandler.py) depending on the subscription's service model.
 - E2SM-CP events are only logged for now (`[E2SM-CP]` lines); they are not stored in the SDL.
+- E2SM-KPM carries only 3GPP measurements (TS 28.552, e.g. `RRC.ConnEstabAtt`), no MobiFlow telemetry: the xApp subscribes to every measurement of the first report style with action definition format 1 (E2 Node Measurement). The E2 node sends an indication every reporting period, with one record per granularity period: `ran.e2sm_kpm.reporting_period_ms` (event trigger) and `ran.e2sm_kpm.granularity_period_ms` (action definition), which must divide the reporting period. The measurements are only logged for now (`[E2SM-KPM]` lines).
 - The E2SM-CP ASN.1 code is generated into `src/asn1/e2sm_cp` (`asn1_compile_cp.sh`) and built into its own wrapper, `src/asn1/wrapper_cp` (`wrapper_compile.sh`).
-- `tests/e2sm_cp/replay.py` replays E2AP PDUs recorded from the agent through the xApp code, without a RIC, and prints the log.
+- `tests/e2_replay/replay.py` replays E2AP PDUs recorded from the agent (E2SM-CP and E2SM-KPM) through the xApp code, without a RIC, and prints the log.
 
 
 

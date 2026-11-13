@@ -25,7 +25,6 @@ from .utils.constants import Constants
 from .manager import *
 from .handler import *
 from .asn1 import StandardAsnProxy, OnosAsnProxy
-from .mobiflow import FactBase, BS, BS_MOBIFLOW_NS, BsStatus
 from mdclogpy import Level
 
 class HWXapp:
@@ -58,8 +57,24 @@ class HWXapp:
         """
         rmr_xapp.logger.set_level(Level.INFO)
         rmr_xapp.logger.info("HWXapp.post_init :: post_init called")
+
+        # load xApp config
+        with open(self.__XAPP_CONFIG_PATH, 'r') as config_file:
+            config_json = json.loads(config_file.read())
+        ran_config = config_json["ran"]
+        self.target_oid_list = ran_config["target_oid_list"]
+        # E2SM-KPM: one indication per reporting period, carrying one record
+        # (measurement values) per granularity period
+        kpm_config = ran_config.get("e2sm_kpm", {})
+        kpm_reporting_period_ms = int(kpm_config.get("reporting_period_ms", 1000))
+        kpm_granularity_period_ms = int(kpm_config.get("granularity_period_ms", kpm_reporting_period_ms))
+        rmr_xapp.logger.info(f"E2SM-KPM reporting period {kpm_reporting_period_ms} ms, "
+                             f"granularity period {kpm_granularity_period_ms} ms")
+
         self.sdl_mgr = SdlManager(rmr_xapp)
-        self.sub_mgr = SubscriptionManager(rmr_xapp, self.asn_proxy, self.sdl_mgr)
+        self.sub_mgr = SubscriptionManager(rmr_xapp, self.asn_proxy, self.sdl_mgr,
+                                           kpm_reporting_period_ms=kpm_reporting_period_ms,
+                                           kpm_granularity_period_ms=kpm_granularity_period_ms)
         # self.sdl_alarm_mgr = SdlAlarmManager()
         # a1_mgr = A1PolicyManager(rmr_xapp)
         # a1_mgr.startup()
@@ -68,11 +83,6 @@ class HWXapp:
 
         self._register(rmr_xapp)
 
-        # load xApp config
-        with open(self.__XAPP_CONFIG_PATH, 'r') as config_file:
-            config_json = json.loads(config_file.read())
-            self.target_oid_list = config_json["ran"]["target_oid_list"]
-        
         # Start subscription processing in a separate thread
         subscription_thread = threading.Thread(target=self._process_subscription, args=(rmr_xapp,), daemon=True)
         subscription_thread.start()
@@ -82,8 +92,6 @@ class HWXapp:
         """
         Function to obtain nodeb list and handle subscriptions in an infinite loop
         """
-        fb = FactBase() # init fact base
-
         while True:
             # obtain nodeb list for subscription.
             time.sleep(5) # query at each interval
@@ -105,31 +113,10 @@ class HWXapp:
                         rmr_xapp.logger.debug(f"connection status {connection_status}")
                         if connection_status == 1:
                             self.sub_mgr.send_subscription_request(gnb_nb_identity, ran_func)
-                        elif connection_status == 2 and self.sub_mgr.service_model_of(rf_oid) == Constants.SM_CP:
-                            # E2SM-CP keeps no BS state yet: forget the subscription so
-                            # that it is made again when the node reconnects
+                        elif connection_status == 2:
+                            # no RAN state is kept: forget the subscription so that
+                            # it is made again when the node reconnects
                             self.sub_mgr.delete_subscription(inventory_name, ran_func["ranFunctionId"])
-                        elif connection_status == 2 and self.sub_mgr.service_model_of(rf_oid) == Constants.SM_KPM:
-                            # create or update BS state
-                            me_id = inventory_name
-                            bs = BS()
-                            bs.name = me_id  # gnb_208_099_00000e00
-                            bs.mcc = me_id.split("_")[1]
-                            bs.mnc = me_id.split("_")[2]
-                            bs.nr_cell_id = int(me_id.split("_")[3], 16)
-                            bs.status = BsStatus.DISCONNECTED
-                            if fb.get_bs_index_by_name(bs.name) != -1:
-                                # only track when the cell transit from connected to disconnected
-                                fb.add_or_update_bs(bs)
-                                bs = fb.get_bs(bs.nr_cell_id)
-                                if bs.should_report:
-                                    # report only when there's new update to the BS
-                                    mf = bs.generate_mobiflow()
-                                    # store Mobiflow to SDL
-                                    rmr_xapp.logger.info(f"[MobiFlow] Storing MobiFlow record to SDL {mf.__str__()}")
-                                    self.sdl_mgr.store_data_to_sdl(BS_MOBIFLOW_NS, str(mf.msg_id), mf.__str__())
-                                    # delete subscription
-                                    self.sub_mgr.delete_subscription(inventory_name)
 
     def _register(self, rmr_xapp):
         # Register xApp to the App mgr
@@ -196,7 +183,7 @@ class HWXapp:
         SubscriptionHandler(self._rmr_xapp, Constants.SUBSCRIPTION_REQ)
         # E2AP layer; hands each indication to the handler of its service model
         IndicationHandler(self._rmr_xapp, Constants.INDICATION_REQ, self.asn_proxy, self.sub_mgr, {
-            Constants.SM_KPM: KpmIndicationHandler(self._rmr_xapp, self.asn_proxy, self.sdl_mgr),
+            Constants.SM_KPM: KpmIndicationHandler(self._rmr_xapp, self.asn_proxy, self.sub_mgr),
             Constants.SM_CP: CpIndicationHandler(self._rmr_xapp, self.asn_proxy, self.sub_mgr),
         })
 

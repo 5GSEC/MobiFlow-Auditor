@@ -1,10 +1,33 @@
 import time
+from datetime import datetime, timezone
+from typing import Optional
+
+NTP_UNIX_OFFSET = 2208988800  # seconds from 1900-01-01 to 1970-01-01
 
 def get_time_ms():
     return round(time.time() * 1000)
 
 def get_time_sec():
     return round(time.time())
+
+def ntp_to_datetime(ntp_hex: str) -> Optional[datetime]:
+    """NTP timestamp (hex) -> UTC datetime: 64 bits (seconds and fraction), or
+    only the 32-bit seconds part (E2SM-KPM TimeStamp)."""
+    try:
+        digits = "".join(ntp_hex.split())
+        ntp = int(digits, 16)
+    except (AttributeError, TypeError, ValueError):
+        return None
+    if len(digits) <= 8:
+        ntp <<= 32
+    seconds = (ntp >> 32) - NTP_UNIX_OFFSET + (ntp & 0xFFFFFFFF) / 2 ** 32
+    try:
+        return datetime.fromtimestamp(seconds, tz=timezone.utc)
+    except (OverflowError, OSError, ValueError):
+        return None
+
+def format_time(t: Optional[datetime]) -> str:
+    return t.isoformat(timespec="microseconds").replace("+00:00", "Z") if t else "-"
 
 def find_all_values(d, target_key):
     """

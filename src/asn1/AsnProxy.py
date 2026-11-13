@@ -47,6 +47,10 @@ class AsnProxy(ABC):
     def encode_e2sm_kpm_indication_message(self, hex_payload: str):
         pass
 
+    def decode_e2sm_kpm_indication_header(self, hex_payload: str):
+        """E2SM-KPM indication header; None if the proxy cannot decode it."""
+        return None
+
     @abstractmethod
     def decode_e2sm_kpm_action_definition(self, hex_payload: str):
         pass

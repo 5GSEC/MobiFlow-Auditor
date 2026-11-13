@@ -12,16 +12,15 @@ Log format (one line per indication, then one per event):
 
 import json
 import threading
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Optional
 from mdclogpy import Level
 from ricxappframe.xapp_frame import RMRXapp
 from ..asn1 import AsnProxy
 from ..manager import SubscriptionManager
 from ..mobiflow.encoding import decode_rrc_msg, nas_emm_code_NR
+from ..utils.utils import ntp_to_datetime, format_time
 from .IndicationHandler import E2Indication, ServiceModelIndicationHandler
-
-NTP_UNIX_OFFSET = 2208988800  # seconds from 1900-01-01 to 1970-01-01
 
 DIRECTION = {0: "UL", 1: "DL"}
 INTERFACE = {0: "NGAP", 1: "XnAP", 2: "F1AP", 3: "E1AP", 4: "S1AP", 5: "X2AP", 6: "W1AP"}
@@ -49,20 +48,6 @@ F1AP_PROCEDURE = {
 
 # RRC classes whose message names are known (mobiflow.encoding): (dcch, downlink)
 RRC_NAMED_CLASSES = {2: (0, 1), 3: (1, 1), 5: (0, 0), 7: (1, 0)}
-
-
-def ntp_to_datetime(ntp_hex: str) -> Optional[datetime]:
-    """64-bit NTP timestamp (hex) -> UTC datetime."""
-    try:
-        ntp = int(ntp_hex, 16)
-    except (TypeError, ValueError):
-        return None
-    seconds = (ntp >> 32) - NTP_UNIX_OFFSET + (ntp & 0xFFFFFFFF) / 2 ** 32
-    return datetime.fromtimestamp(seconds, tz=timezone.utc)
-
-
-def format_time(t: Optional[datetime]) -> str:
-    return t.isoformat(timespec="microseconds").replace("+00:00", "Z") if t else "-"
 
 
 def plmn_to_str(plmn_hex: str) -> str:

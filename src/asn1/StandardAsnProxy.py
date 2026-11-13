@@ -18,6 +18,9 @@ class StandardAsnProxy(AsnProxy):
     def encode_e2sm_kpm_indication_message(self, hex_payload: str):
         return self.encode_asn_struct("E2SM_KPM_IndicationMessage", hex_payload)
 
+    def decode_e2sm_kpm_indication_header(self, hex_payload: str):
+        return self.decode_asn_struct("E2SM_KPM_IndicationHeader", hex_payload)
+
     def decode_e2sm_kpm_action_definition(self, hex_payload: str):
         return self.decode_asn_struct("E2SM_KPM_ActionDefinition", hex_payload)
 

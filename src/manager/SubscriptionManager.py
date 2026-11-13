@@ -37,7 +37,6 @@ from ricxappframe.entities.rnib.nb_identity_pb2 import NbIdentity
 from ..manager import SdlManager
 from ..asn1 import AsnProxy
 from ._BaseManager import _BaseManager
-from ..mobiflow import FactBase, BS, BS_MOBIFLOW_NS, BsStatus
 from ..utils import Constants, find_all_values
 from mdclogpy import Level
 
@@ -51,7 +50,8 @@ class Subscription:
     oid: str = ""
     subscription_id: Optional[str] = None   # assigned by the subscription manager
     ran_function_definition: Optional[dict] = None  # decoded (E2SM-CP)
-    actions: list = field(default_factory=list)     # (action ID, RIC style type) (E2SM-CP)
+    actions: list = field(default_factory=list)     # (action ID, RIC style type)
+    measurements: list = field(default_factory=list)  # subscribed measurement names (E2SM-KPM)
 
 
 class SubscriptionManager(_BaseManager):
@@ -61,7 +61,8 @@ class SubscriptionManager(_BaseManager):
     __CLIENT_END_POINT = "service-ricxapp-mobiflow-auditor-http.ricxapp"
 
     def __init__(self, rmr_xapp: RMRXapp, asn_proxy: AsnProxy, sdl_mgr: SdlManager,
-                 local_address="0.0.0.0", http_port=8080, rmr_port=4560, report_period=1000,
+                 local_address="0.0.0.0", http_port=8080, rmr_port=4560,
+                 kpm_reporting_period_ms=1000, kpm_granularity_period_ms=1000,
                  cp_max_batch_size=0, cp_max_batch_delay_ms=0) -> None:
         super().__init__(rmr_xapp)
         self.asn_proxy = asn_proxy
@@ -74,7 +75,15 @@ class SubscriptionManager(_BaseManager):
         self.local_address = local_address
         self.client_http_port = http_port
         self.client_rmr_port = rmr_port
-        self.report_period = report_period  # E2SM-KPM
+        # E2SM-KPM: the E2 node sends an indication every reporting period (event
+        # trigger), with one record of measurement values per granularity period
+        # (action definition); the granularity period must divide the reporting period
+        self.kpm_reporting_period_ms = kpm_reporting_period_ms
+        self.kpm_granularity_period_ms = kpm_granularity_period_ms
+        if (kpm_granularity_period_ms <= 0 or kpm_reporting_period_ms <= 0
+                or kpm_reporting_period_ms % kpm_granularity_period_ms != 0):
+            self.logger.error(f"E2SM-KPM granularity period {kpm_granularity_period_ms} ms does not divide the "
+                              f"reporting period {kpm_reporting_period_ms} ms: E2 nodes may reject the subscription")
         # E2SM-CP event trigger: report events as they occur; 0 leaves a limit
         # out (each event is reported in its own indication)
         self.cp_max_batch_size = cp_max_batch_size
@@ -189,6 +198,12 @@ class SubscriptionManager(_BaseManager):
     # ------------------------------------------------------------------
 
     def send_kpm_subscription_request(self, nb_identity: NbIdentity, ran_function: dict):
+        """
+        Subscribes to the measurements of an E2SM-KPM RAN function: every
+        measurement of its first report style with action definition format 1
+        (E2 Node Measurement), reported every reporting period, one record per
+        granularity period.
+        """
         me_id = nb_identity.inventory_name
         rf_id = int(ran_function["ranFunctionId"])
         rf_def = ran_function["ranFunctionDefinition"]
@@ -197,53 +212,74 @@ class SubscriptionManager(_BaseManager):
             return  # subscription already exist
 
         decoded_rf_def = self.asn_proxy.decode_e2sm_kpm_ran_function_definition(rf_def)
-        if decoded_rf_def == None:
-            self.logger.error(f"Fail to decode RAN function def. Payload {rf_def}")
+        if decoded_rf_def is None:
+            self.logger.error(f"[E2SM-KPM] {me_id} RAN function {rf_id}: fail to decode RAN function def. "
+                              f"Payload {rf_def}")
             return
         self.logger.debug(f"Decode RAN function def:\n {decoded_rf_def}")
 
-        kpm_measurement_names = find_all_values(decoded_rf_def, "measName")
-        meas_list = ";".join(kpm_measurement_names)
+        style = self._kpm_report_style(decoded_rf_def)
+        if style is None:
+            self.logger.warning(f"[E2SM-KPM] {me_id} RAN function {rf_id}: not subscribing, no report style "
+                                f"with action definition format 1 and measurements in {decoded_rf_def}")
+            return
+        style_type, meas_names = style
+        self.logger.info(f"[E2SM-KPM] {me_id} RAN function {rf_id}: report style {style_type}, "
+                         f"measurements {meas_names}")
 
+        action_def = self.encode_action_definition(meas_list=";".join(meas_names), ric_style_type=style_type)
+        if not action_def:
+            self.logger.error(f"[E2SM-KPM] {me_id} RAN function {rf_id}: fail to encode the action definition")
+            return
         sub = Subscription(me_id=me_id, ran_function_id=rf_id, service_model=Constants.SM_KPM,
-                           oid=ran_function.get("ranFunctionOid", ""))
+                           oid=ran_function.get("ranFunctionOid", ""),
+                           actions=[(0, style_type)], measurements=meas_names)
         actions = [{"ActionID": 0,
                     "ActionType": "report",
-                    "ActionDefinition": self.encode_action_definition(meas_list=meas_list),
+                    "ActionDefinition": action_def,
                     "SubsequentActionType": "continue",
                     "TimeToWait": "w10ms"}]
-        if self._post_subscription(sub, self.encode_report_period(), actions) is None:
-            return
+        self._post_subscription(sub, self.encode_report_period(), actions)
 
-        # add base station Info
-        bs = BS()
-        bs.name = me_id  # gnb_208_099_00000e00
-        bs.mcc = me_id.split("_")[1]
-        bs.mnc = me_id.split("_")[2]
-        bs.nr_cell_id = int(me_id.split("_")[3], 16)
-        bs.report_period = self.report_period
-        bs.status = BsStatus.CONNECTED
-        fb = FactBase()
-        fb.add_or_update_bs(bs)
-        bs = fb.get_bs(bs.nr_cell_id)
-        if bs.should_report:
-            # report only when there's new update to the BS
-            mf = bs.generate_mobiflow()
-            # store Mobiflow to SDL
-            self.logger.info(f"[MobiFlow] Storing MobiFlow record to SDL {mf.__str__()}")
-            self.sdl_mgr.store_data_to_sdl(BS_MOBIFLOW_NS, str(mf.msg_id), mf.__str__())
+    @staticmethod
+    def _kpm_report_style(decoded_rf_def: dict):
+        """(RIC style type, measurement names) of the first report style with
+        action definition format 1 and measurements, None if there is none."""
+        for item in find_all_values(decoded_rf_def, "RIC-ReportStyle-Item"):
+            fields = {"item": item}
+            try:
+                style_type = int(find_all_values(fields, "ric-ReportStyle-Type")[0])
+                action_format = int(find_all_values(fields, "ric-ActionFormat-Type")[0])
+            except (IndexError, TypeError, ValueError):
+                continue
+            meas_names = find_all_values(fields, "measName")
+            if action_format == 1 and meas_names:
+                return style_type, meas_names
+        return None
 
     def handle_kpm_subscription_response(self, sub: Subscription, resp_json: dict):
-        self._log_subscription_status("[E2SM-KPM]", sub, resp_json)
+        self._log_subscription_status(
+            "[E2SM-KPM]", sub, resp_json,
+            f", reporting period {self.kpm_reporting_period_ms} ms, granularity period "
+            f"{self.kpm_granularity_period_ms} ms, measurements {sub.measurements}")
 
     def encode_report_period(self) -> list:
-        # [0x08, 0x03, 0xe7],  # 0x3e7 -> 1000
-        return [0x08, (self.report_period-1) // 256, (self.report_period-1) % 256]
+        """
+        E2SM-KPM event trigger definition format 1 (APER): reportingPeriod
+        INTEGER (1..4294967295), so the value minus 1 in 1 to 4 octets, after
+        a byte that holds the octet count minus 1 (bits 4-3), e.g. 1000 ms ->
+        [0x08, 0x03, 0xe7].
+        """
+        value = self.kpm_reporting_period_ms - 1
+        octets = max(1, (value.bit_length() + 7) // 8)
+        return [(octets - 1) << 3] + list(value.to_bytes(octets, "big"))
 
-    def encode_action_definition(self, meas_list: str, action_format=1, ric_style_type=6):
+    def encode_action_definition(self, meas_list: str, ric_style_type: int, action_format=1) -> list:
+        """E2SM-KPM action definition format 1: the measurements (names, ";"
+        separated) and the granularity period."""
         delimiter = ","
         action_def_params = delimiter.join([str(action_format), str(ric_style_type),
-                                            str(self.report_period), meas_list])
+                                            str(self.kpm_granularity_period_ms), meas_list])
         action_def_hex = self.asn_proxy.encode_e2sm_kpm_action_definition(action_def_params)
         self.logger.debug(f"Encoded action definition hex payload: {action_def_hex}")
         action_def_encoded = [int(action_def_hex[i:i + 2], 16) for i in range(0, len(action_def_hex), 2)]

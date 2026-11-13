@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 """
-Offline check of the E2SM-CP path, without a RIC: replays E2AP PDUs recorded
-from the 5G-eBPF MobiFlow agent through the xApp code and prints its log.
+Offline check of the E2SM-CP and E2SM-KPM paths, without a RIC: replays E2AP
+PDUs recorded from the 5G-eBPF MobiFlow agent through the xApp code and prints
+its log.
 
   1. The first PDU (E2 setup request) gives the E2 node's RAN functions, as
-     the R-NIB would; the xApp subscribes to the E2SM-CP one (the subscription
-     manager REST API is simulated, the request it would get is printed).
+     the R-NIB would; the xApp subscribes to those of a supported OID (the
+     subscription manager REST API is simulated, the request it would get is
+     printed). E2SM-KPM: reporting period 10 s, granularity period 1 s.
   2. Every RIC indication goes through IndicationHandler (E2AP layer) to
-     CpIndicationHandler, which logs the events.
+     CpIndicationHandler or KpmIndicationHandler, which log them.
 
 The ricxappframe and mdclogpy modules are stubbed, so only the wrappers are
 needed:  src/asn1/wrapper_compile.sh
 
-Usage:  tests/e2sm_cp/replay.py [<pdus file>]    (default: normal_tmsi_attach_0.pdus)
+Usage:  tests/e2_replay/replay.py [<pdus file>]    (default: normal_tmsi_attach_0.pdus)
         one hex-encoded E2AP PDU per line, the E2 setup request first
 
 Exit status 1 if an indication could not be handled.
@@ -57,7 +59,7 @@ xapp_frame.rmr.RMR_MS_PAYLOAD, xapp_frame.rmr.RMR_MS_MEID = "payload", "meid"
 
 sys.path.insert(0, REPO)
 from src.asn1 import StandardAsnProxy  # noqa: E402
-from src.handler import IndicationHandler, CpIndicationHandler  # noqa: E402
+from src.handler import IndicationHandler, CpIndicationHandler, KpmIndicationHandler  # noqa: E402
 from src.manager.SubscriptionManager import SubscriptionManager  # noqa: E402
 from src.utils.constants import Constants  # noqa: E402
 
@@ -116,23 +118,28 @@ def main():
     xapp = FakeXapp()
     asn = StandardAsnProxy(os.path.join(REPO, "src/asn1/wrapper"), os.path.join(REPO, "src/asn1/wrapper_cp"))
 
+    subscription_ids = []
+
     def fake_post(url, json=None, **kwargs):
         print("REST POST", url, json)
-        return types.SimpleNamespace(status_code=201, text='{"SubscriptionId":"replay-1"}')
+        subscription_ids.append(f"replay-{len(subscription_ids) + 1}")
+        return types.SimpleNamespace(status_code=201, text=f'{{"SubscriptionId":"{subscription_ids[-1]}"}}')
 
     with mock.patch.object(SubscriptionManager, "regsiter_subscription_handler"), \
             mock.patch("requests.post", fake_post):
-        sub_mgr = SubscriptionManager(xapp, asn, mock.MagicMock())
+        sub_mgr = SubscriptionManager(xapp, asn, mock.MagicMock(),
+                                      kpm_reporting_period_ms=10000, kpm_granularity_period_ms=1000)
         nb = types.SimpleNamespace(inventory_name=ME_ID, connection_status=1)
         for rf in ran_functions(asn, pdus[0]):
-            if rf["ranFunctionOid"] == Constants.E2SM_CP_OID:
+            if sub_mgr.service_model_of(rf["ranFunctionOid"]) is not None:
                 sub_mgr.send_subscription_request(nb, rf)
-    sub_mgr.handle_subscription_response(json.dumps({"SubscriptionId": "replay-1", "SubscriptionInstances": [
-        {"XappEventInstanceId": 1, "E2EventInstanceId": 1, "ErrorCause": "", "ErrorSource": "",
-         "TimeoutType": ""}]}).encode())
+    for subscription_id in subscription_ids:
+        sub_mgr.handle_subscription_response(json.dumps({"SubscriptionId": subscription_id, "SubscriptionInstances": [
+            {"XappEventInstanceId": 1, "E2EventInstanceId": 1, "ErrorCause": "", "ErrorSource": "",
+             "TimeoutType": ""}]}).encode())
 
     IndicationHandler(xapp, Constants.INDICATION_REQ, asn, sub_mgr, {
-        Constants.SM_KPM: mock.MagicMock(),
+        Constants.SM_KPM: KpmIndicationHandler(xapp, asn, sub_mgr),
         Constants.SM_CP: CpIndicationHandler(xapp, asn, sub_mgr),
     })
     handler = xapp.callbacks[Constants.INDICATION_REQ]

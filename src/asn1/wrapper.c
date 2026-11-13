@@ -5,6 +5,7 @@
 #include "asn_application.h"
 #include "E2AP-PDU.h"
 #include "E2SM-KPM-IndicationMessage.h"
+#include "E2SM-KPM-IndicationHeader.h"
 #include "E2SM-KPM-ActionDefinition.h"
 #include "E2SM-KPM-RANfunction-Description.h"
 #include "E2SM-KPM-ActionDefinition-Format1.h"
@@ -37,6 +38,7 @@ void decode_data_structure(const char* structure_name, const char* hex_payload) 
      } structure_mapping[] = {
          {"E2AP_PDU", &asn_DEF_E2AP_PDU, sizeof(E2AP_PDU_t)},
          {"E2SM_KPM_IndicationMessage", &asn_DEF_E2SM_KPM_IndicationMessage, sizeof(E2SM_KPM_IndicationMessage_t)},
+         {"E2SM_KPM_IndicationHeader", &asn_DEF_E2SM_KPM_IndicationHeader, sizeof(E2SM_KPM_IndicationHeader_t)},
          {"E2SM_KPM_ActionDefinition", &asn_DEF_E2SM_KPM_ActionDefinition, sizeof(E2SM_KPM_ActionDefinition_t)},
          {"E2SM_KPM_RANfunction_Description", &asn_DEF_E2SM_KPM_RANfunction_Description, sizeof(E2SM_KPM_RANfunction_Description_t)},
      };
