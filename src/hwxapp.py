@@ -15,13 +15,12 @@
 #   limitations under the License.
 #
 # ==================================================================================
-import time
 import json
-import threading
 import requests
 from os import getenv
 from ricxappframe.xapp_frame import RMRXapp, rmr
 from .utils.constants import Constants
+from .utils.config import RanConfig, ConfigError
 from .manager import *
 from .handler import *
 from .asn1 import StandardAsnProxy, OnosAsnProxy
@@ -58,71 +57,34 @@ class HWXapp:
         rmr_xapp.logger.set_level(Level.INFO)
         rmr_xapp.logger.info("HWXapp.post_init :: post_init called")
 
-        # load xApp config
+        # load xApp config; an invalid "ran" section stops the xApp, with the
+        # offending key in the log
         with open(self.__XAPP_CONFIG_PATH, 'r') as config_file:
-            config_json = json.loads(config_file.read())
-        ran_config = config_json["ran"]
-        self.target_oid_list = ran_config["target_oid_list"]
-        # E2SM-KPM: one indication per reporting period, carrying one record
-        # (measurement values) per granularity period
-        kpm_config = ran_config.get("e2sm_kpm", {})
-        kpm_reporting_period_ms = int(kpm_config.get("reporting_period_ms", 1000))
-        kpm_granularity_period_ms = int(kpm_config.get("granularity_period_ms", kpm_reporting_period_ms))
-        rmr_xapp.logger.info(f"E2SM-KPM reporting period {kpm_reporting_period_ms} ms, "
-                             f"granularity period {kpm_granularity_period_ms} ms")
+            config_json_str = config_file.read()
+        try:
+            self.ran_config = RanConfig.from_dict(json.loads(config_json_str).get("ran"),
+                                                  warn=rmr_xapp.logger.warning)
+        except (ConfigError, json.JSONDecodeError) as e:
+            rmr_xapp.logger.error(f"Invalid xApp config {self.__XAPP_CONFIG_PATH}: {e}")
+            raise
+        rmr_xapp.logger.info(f"RAN config: {self.ran_config}")
 
         self.sdl_mgr = SdlManager(rmr_xapp)
-        self.sub_mgr = SubscriptionManager(rmr_xapp, self.asn_proxy, self.sdl_mgr,
-                                           kpm_reporting_period_ms=kpm_reporting_period_ms,
-                                           kpm_granularity_period_ms=kpm_granularity_period_ms)
+        self.sub_mgr = SubscriptionManager(rmr_xapp, self.asn_proxy, self.sdl_mgr, self.ran_config)
         # self.sdl_alarm_mgr = SdlAlarmManager()
         # a1_mgr = A1PolicyManager(rmr_xapp)
         # a1_mgr.startup()
         # metric_mgr = MetricManager(rmr_xapp)
         # metric_mgr.send_metric()
 
-        self._register(rmr_xapp)
+        self._register(rmr_xapp, config_json_str)
 
-        # Start subscription processing in a separate thread
-        subscription_thread = threading.Thread(target=self._process_subscription, args=(rmr_xapp,), daemon=True)
-        subscription_thread.start()
+        # poll the R-NIB for E2 nodes and subscribe to them, in a separate thread
+        self.sub_mgr.start()
 
-    
-    def _process_subscription(self, rmr_xapp):
-        """
-        Function to obtain nodeb list and handle subscriptions in an infinite loop
-        """
-        while True:
-            # obtain nodeb list for subscription.
-            time.sleep(5) # query at each interval
-            # enb_list = self.sdl_mgr.get_enb_list()
-            # for enb_nb_identity in enb_list:
-            #     inventory_name = enb_nb_identity.inventory_name
-            #     nodeb_info_json = self.sdl_mgr.get_nodeb_info_by_inventory_name(inventory_name)
-            gnb_list = self.sdl_mgr.get_gnb_list()
-            for gnb_nb_identity in gnb_list:
-                inventory_name = gnb_nb_identity.inventory_name
-                connection_status = gnb_nb_identity.connection_status
-                nodeb_info_json = self.sdl_mgr.get_nodeb_info_by_inventory_name(inventory_name)
-                # rmr_xapp.logger.info(f"RAN {inventory_name} status {connection_status}")
-                for ran_func in nodeb_info_json["gnb"]["ranFunctions"]:
-                    rf_oid = ran_func["ranFunctionOid"]
-                    if rf_oid in self.target_oid_list:
-                        rmr_xapp.logger.debug(f"Found target ran function for gNB {inventory_name}: {ran_func}")
-                        # Subscribe to NodeB
-                        rmr_xapp.logger.debug(f"connection status {connection_status}")
-                        if connection_status == 1:
-                            self.sub_mgr.send_subscription_request(gnb_nb_identity, ran_func)
-                        elif connection_status == 2:
-                            # no RAN state is kept: forget the subscription so that
-                            # it is made again when the node reconnects
-                            self.sub_mgr.delete_subscription(inventory_name, ran_func["ranFunctionId"])
-
-    def _register(self, rmr_xapp):
+    def _register(self, rmr_xapp, config_json_str: str):
         # Register xApp to the App mgr
         url = "http://service-%s-appmgr-http.%s:8080/ric/v1/register" % (self.__PLT_NAME_SPACE, self.__PLT_NAME_SPACE)
-        with open(self.__XAPP_CONFIG_PATH, 'r') as config_file:
-            config_json_str = config_file.read()
         body = {
             "appName": self.__XAPP_NAME,
             "httpEndpoint": self.__XAPP_HTTP_END_POINT,
@@ -201,6 +163,8 @@ class HWXapp:
         can only be called if thread=True when started
         TODO: could we register a signal handler for Docker SIGTERM that calls this?
         """
+        if getattr(self, "sub_mgr", None) is not None:
+            self.sub_mgr.stop()
         self._rmr_xapp.stop()
 
 

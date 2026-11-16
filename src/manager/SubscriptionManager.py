@@ -20,9 +20,11 @@
 """
 """
 Subscribes to the RAN functions of the E2 nodes through the RIC subscription
-manager REST API, one subscription per (E2 node, RAN function). E2SM-KPM and
-E2SM-CP are handled by separate functions: each builds its own event trigger
-and action definitions, and handles its own subscription responses.
+manager REST API, one subscription per (E2 node, RAN function). start() polls
+the R-NIB for E2 nodes every RanConfig.poll_interval_ms and subscribes to the
+RAN functions of RanConfig.target_oid_list of each connected node. E2SM-KPM
+and E2SM-CP are handled by separate functions: each builds its own event
+trigger and action definitions, and handles its own subscription responses.
 """
 
 import requests
@@ -33,12 +35,14 @@ import socketserver
 from dataclasses import dataclass, field
 from typing import Optional
 from ricxappframe.xapp_frame import RMRXapp
-from ricxappframe.entities.rnib.nb_identity_pb2 import NbIdentity
+from ricxappframe.entities.rnib.nb_identity_pb2 import NbIdentity, CONNECTED, DISCONNECTED
 from ..manager import SdlManager
 from ..asn1 import AsnProxy
 from ._BaseManager import _BaseManager
-from ..utils import Constants, find_all_values
+from ..utils import Constants, RanConfig, find_all_values
 from mdclogpy import Level
+
+HTTP_TIMEOUT_S = 10  # subscription manager REST API
 
 
 @dataclass
@@ -61,37 +65,84 @@ class SubscriptionManager(_BaseManager):
     __CLIENT_END_POINT = "service-ricxapp-mobiflow-auditor-http.ricxapp"
 
     def __init__(self, rmr_xapp: RMRXapp, asn_proxy: AsnProxy, sdl_mgr: SdlManager,
-                 local_address="0.0.0.0", http_port=8080, rmr_port=4560,
-                 kpm_reporting_period_ms=1000, kpm_granularity_period_ms=1000,
-                 cp_max_batch_size=0, cp_max_batch_delay_ms=0) -> None:
+                 ran_config: Optional[RanConfig] = None,
+                 local_address="0.0.0.0", http_port=8080, rmr_port=4560) -> None:
         super().__init__(rmr_xapp)
         self.asn_proxy = asn_proxy
         self.sdl_mgr = sdl_mgr
-        self.gnb_list = []
-        self.enb_list = []
         self.logger.set_level(Level.INFO)
+        # validated by RanConfig.from_dict
+        self.config = ran_config if ran_config is not None else RanConfig()
         self._lock = threading.Lock()
         self.subscriptions = {}  # (me_id, ran function ID) -> Subscription
         self.local_address = local_address
         self.client_http_port = http_port
         self.client_rmr_port = rmr_port
-        # E2SM-KPM: the E2 node sends an indication every reporting period (event
-        # trigger), with one record of measurement values per granularity period
-        # (action definition); the granularity period must divide the reporting period
-        self.kpm_reporting_period_ms = kpm_reporting_period_ms
-        self.kpm_granularity_period_ms = kpm_granularity_period_ms
-        if (kpm_granularity_period_ms <= 0 or kpm_reporting_period_ms <= 0
-                or kpm_reporting_period_ms % kpm_granularity_period_ms != 0):
-            self.logger.error(f"E2SM-KPM granularity period {kpm_granularity_period_ms} ms does not divide the "
-                              f"reporting period {kpm_reporting_period_ms} ms: E2 nodes may reject the subscription")
-        # E2SM-CP event trigger: report events as they occur; 0 leaves a limit
-        # out (each event is reported in its own indication)
-        self.cp_max_batch_size = cp_max_batch_size
-        self.cp_max_batch_delay_ms = cp_max_batch_delay_ms
+        # R-NIB polling (start / stop)
+        self._stop_event = threading.Event()
+        self._poll_thread: Optional[threading.Thread] = None
         # subscription response
         self.subscription_resp_handler = None
         self.responseCB = None
         self.regsiter_subscription_handler(response_cb=self.handle_subscription_response)
+
+    # ------------------------------------------------------------------
+    # E2 node discovery: polls the R-NIB, subscribes to connected nodes
+    # ------------------------------------------------------------------
+
+    def start(self):
+        """Starts polling the R-NIB for E2 nodes in a daemon thread (no-op if already started)."""
+        if self._poll_thread is not None and self._poll_thread.is_alive():
+            return
+        self._stop_event.clear()
+        self._poll_thread = threading.Thread(target=self._poll_loop, name="subscription-poll", daemon=True)
+        self._poll_thread.start()
+        self.logger.info(f"Polling the R-NIB for E2 nodes every {self.config.poll_interval_ms} ms, target RAN "
+                         f"function OIDs {list(self.config.target_oid_list)}")
+
+    def stop(self, timeout_s: Optional[float] = None):
+        """Stops polling; subscriptions already made are kept."""
+        self._stop_event.set()
+        if self._poll_thread is not None:
+            self._poll_thread.join(timeout_s)
+            self._poll_thread = None
+
+    def _poll_loop(self):
+        # wait one interval before the first poll, so that the xApp registration
+        # (and its RMR routes) are in place before subscribing
+        while not self._stop_event.wait(self.config.poll_interval_ms / 1000):
+            try:
+                self.poll_once()
+            except Exception as e:  # keep polling: a failed poll is retried at the next interval
+                self.logger.error(f"Polling the R-NIB for E2 nodes failed: {e!r}")
+
+    def poll_once(self):
+        """Subscribes to the target RAN functions of every connected gNB, and
+        forgets the subscriptions to disconnected ones."""
+        for nb_identity in self.sdl_mgr.get_gnb_list():
+            try:
+                self._reconcile_node(nb_identity)
+            except Exception as e:  # one failing node must not keep the others from being subscribed to
+                self.logger.error(f"Handling E2 node {nb_identity.inventory_name} failed: {e!r}")
+
+    def _reconcile_node(self, nb_identity: NbIdentity):
+        me_id = nb_identity.inventory_name
+        status = nb_identity.connection_status
+        if status == DISCONNECTED:
+            # no RAN state is kept: forget the subscriptions so that they are
+            # made again when the node reconnects
+            self.delete_subscription(me_id)
+            return
+        if status != CONNECTED:
+            return  # e.g. connecting, shutting down: retried at the next poll
+        nodeb_info = self.sdl_mgr.get_nodeb_info_by_inventory_name(me_id)
+        ran_functions = (nodeb_info.get("gnb") or {}).get("ranFunctions") or []
+        if not ran_functions:
+            self.logger.debug(f"No RAN function found for E2 node {me_id}: {nodeb_info}")
+        for ran_func in ran_functions:
+            if ran_func.get("ranFunctionOid") in self.config.target_oid_list:
+                self.logger.debug(f"Found target RAN function for E2 node {me_id}: {ran_func}")
+                self.send_subscription_request(nb_identity, ran_func)
 
     @staticmethod
     def service_model_of(oid: str) -> Optional[str]:
@@ -114,7 +165,7 @@ class SubscriptionManager(_BaseManager):
 
     def query_subscriptions(self):
         try:
-            response = requests.get(self.__SUBSCRIPTION_URL)
+            response = requests.get(self.__SUBSCRIPTION_URL, timeout=HTTP_TIMEOUT_S)
 
             if response.status_code == 201:  # subscription request success
                 resp = json.loads(response.text)
@@ -168,7 +219,7 @@ class SubscriptionManager(_BaseManager):
         self.logger.info(f"Sending {sub.service_model} subscription request for {sub.me_id} "
                          f"RAN function {sub.ran_function_id}: {self.__SUBSCRIPTION_URL}")
         try:
-            response = requests.post(self.__SUBSCRIPTION_URL, json=subscription_params)
+            response = requests.post(self.__SUBSCRIPTION_URL, json=subscription_params, timeout=HTTP_TIMEOUT_S)
             self.logger.info(f"Subscription response {response.status_code} {response.text}")
             if response.status_code != 201:  # subscription request failed
                 return None
@@ -260,8 +311,8 @@ class SubscriptionManager(_BaseManager):
     def handle_kpm_subscription_response(self, sub: Subscription, resp_json: dict):
         self._log_subscription_status(
             "[E2SM-KPM]", sub, resp_json,
-            f", reporting period {self.kpm_reporting_period_ms} ms, granularity period "
-            f"{self.kpm_granularity_period_ms} ms, measurements {sub.measurements}")
+            f", reporting period {self.config.kpm.reporting_period_ms} ms, granularity period "
+            f"{self.config.kpm.granularity_period_ms} ms, measurements {sub.measurements}")
 
     def encode_report_period(self) -> list:
         """
@@ -270,7 +321,7 @@ class SubscriptionManager(_BaseManager):
         a byte that holds the octet count minus 1 (bits 4-3), e.g. 1000 ms ->
         [0x08, 0x03, 0xe7].
         """
-        value = self.kpm_reporting_period_ms - 1
+        value = self.config.kpm.reporting_period_ms - 1
         octets = max(1, (value.bit_length() + 7) // 8)
         return [(octets - 1) << 3] + list(value.to_bytes(octets, "big"))
 
@@ -279,7 +330,7 @@ class SubscriptionManager(_BaseManager):
         separated) and the granularity period."""
         delimiter = ","
         action_def_params = delimiter.join([str(action_format), str(ric_style_type),
-                                            str(self.kpm_granularity_period_ms), meas_list])
+                                            str(self.config.kpm.granularity_period_ms), meas_list])
         action_def_hex = self.asn_proxy.encode_e2sm_kpm_action_definition(action_def_params)
         self.logger.debug(f"Encoded action definition hex payload: {action_def_hex}")
         action_def_encoded = [int(action_def_hex[i:i + 2], 16) for i in range(0, len(action_def_hex), 2)]
@@ -312,8 +363,8 @@ class SubscriptionManager(_BaseManager):
         if trigger_style is None:
             self.logger.error(f"[E2SM-CP] {me_id} RAN function {rf_id} has no event trigger style of format 1")
             return
-        event_trigger = self.asn_proxy.encode_e2sm_cp_event_trigger(self.cp_max_batch_size,
-                                                                     self.cp_max_batch_delay_ms)
+        event_trigger = self.asn_proxy.encode_e2sm_cp_event_trigger(self.config.cp.max_batch_size,
+                                                                     self.config.cp.max_batch_delay_ms)
         if event_trigger is None:
             self.logger.error(f"[E2SM-CP] Fail to encode event trigger: {self.asn_proxy.last_error}")
             return
@@ -344,8 +395,8 @@ class SubscriptionManager(_BaseManager):
             return
 
         self.logger.info(f"[E2SM-CP] Subscribing to {me_id} RAN function {rf_id}: event trigger style "
-                         f"{trigger_style['type']} (max batch size {self.cp_max_batch_size or '-'}, "
-                         f"max batch delay {self.cp_max_batch_delay_ms or '-'} ms), actions "
+                         f"{trigger_style['type']} (max batch size {self.config.cp.max_batch_size or '-'}, "
+                         f"max batch delay {self.config.cp.max_batch_delay_ms or '-'} ms), actions "
                          f"(ID, report style) {sub.actions}, {len(attribute_ids)} attributes")
         self._post_subscription(sub, list(bytes.fromhex(event_trigger)), actions)
 

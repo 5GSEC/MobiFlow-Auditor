@@ -37,6 +37,21 @@ MobiFlow Auditor also subscribes to **E2SM-CP** (OID `1.3.6.1.4.1.32473.1.1.2.1`
 - The E2SM-CP ASN.1 code is generated into `src/asn1/e2sm_cp` (`asn1_compile_cp.sh`) and built into its own wrapper, `src/asn1/wrapper_cp` (`wrapper_compile.sh`).
 - `tests/e2_replay/replay.py` replays E2AP PDUs recorded from the agent (E2SM-CP and E2SM-KPM) through the xApp code, without a RIC, and prints the log.
 
+### RAN configuration
+
+The `ran` section of [init/config-file.json](./init/config-file.json) configures the subscriptions ([src/utils/config.py](./src/utils/config.py)). Every key is optional and takes the default below when missing. A wrong type or an out-of-range value stops the xApp at startup, with the key named in the log; an unknown key is logged as a warning and ignored.
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `target_oid_list` | both OIDs above | RAN functions to subscribe to, by OID; unsupported OIDs are ignored with a warning |
+| `poll_interval_ms` | `5000` | How often the R-NIB is polled for E2 nodes, i.e. how soon a new or reconnected node is subscribed to (min `100`) |
+| `e2sm_kpm.reporting_period_ms` | `1000` | E2SM-KPM indication period (event trigger) |
+| `e2sm_kpm.granularity_period_ms` | the reporting period | E2SM-KPM measurement record period (action definition); must divide the reporting period |
+| `e2sm_cp.max_batch_size` | `0` | E2SM-CP: report once this many events are pending (`0`: no limit, `1..65535`) |
+| `e2sm_cp.max_batch_delay_ms` | `0` | E2SM-CP: report once this long has elapsed since the first pending event (`0`: no limit) |
+
+With both E2SM-CP limits at `0`, each event is reported in its own indication as it occurs. The settings apply to subscriptions made after the xApp starts; the config file is read from the image (`/tmp/init/config-file.json`), so a change needs a rebuild.
+
 
 
 

@@ -62,6 +62,7 @@ from src.asn1 import StandardAsnProxy  # noqa: E402
 from src.handler import IndicationHandler, CpIndicationHandler, KpmIndicationHandler  # noqa: E402
 from src.manager.SubscriptionManager import SubscriptionManager  # noqa: E402
 from src.utils.constants import Constants  # noqa: E402
+from src.utils.config import RanConfig, KpmConfig  # noqa: E402
 
 
 class Logger:
@@ -128,7 +129,7 @@ def main():
     with mock.patch.object(SubscriptionManager, "regsiter_subscription_handler"), \
             mock.patch("requests.post", fake_post):
         sub_mgr = SubscriptionManager(xapp, asn, mock.MagicMock(),
-                                      kpm_reporting_period_ms=10000, kpm_granularity_period_ms=1000)
+                                      RanConfig(kpm=KpmConfig(reporting_period_ms=10000, granularity_period_ms=1000)))
         nb = types.SimpleNamespace(inventory_name=ME_ID, connection_status=1)
         for rf in ran_functions(asn, pdus[0]):
             if sub_mgr.service_model_of(rf["ranFunctionOid"]) is not None:

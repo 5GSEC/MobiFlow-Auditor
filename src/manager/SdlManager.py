@@ -48,11 +48,12 @@ class SdlManager(_BaseManager):
 
     def get_nodeb_info_by_inventory_name(self, inventory_name) -> Dict:
         url = self.__E2_msgr_endpoint + inventory_name
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
         if response.status_code == 200:
             return json.loads(response.text)
         else:
-            self.logger.error('SdlManager [get_nodeb_info_by_id] Error:', response.status_code)
+            self.logger.error(f"SdlManager [get_nodeb_info_by_inventory_name] {inventory_name}: "
+                              f"{response.status_code} {response.text}")
             return dict()
 
     def store_data_to_sdl(self, ns: str, key: str, value):
