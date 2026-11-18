@@ -38,3 +38,5 @@ class Constants:
     E2SM_KPM_OID = "1.3.6.1.4.1.53148.1.2.2.2"  # O-RAN E2SM-KPM v2
     E2SM_CP_OID = "1.3.6.1.4.1.32473.1.1.2.1"  # MobiFlow control plane telemetry (5GSEC/5G-eBPF)
     SERVICE_MODEL_BY_OID = {E2SM_KPM_OID: SM_KPM, E2SM_CP_OID: SM_CP}
+    # SDL namespace of the data of each service model
+    SDL_NAMESPACE_BY_SM = {SM_KPM: "E2SM-KPM", SM_CP: "E2SM-CP"}

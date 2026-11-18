@@ -203,6 +203,35 @@ ue_mobiflow
 1:�iUE;1;1729716349154.0964;v2.0;SECSM;0;60786;1450744508;0;0;0;0;0;RRCSetup;2;0;0;0;1729716349154.0103;0;0;0
 ```
 
+### E2 node records (E2SM-CP / E2SM-KPM)
+
+The E2 nodes the xApp is subscribed to are recorded in the namespace of each service model, `E2SM-CP` and `E2SM-KPM`:
+
+| Key | Type | Content |
+|---|---|---|
+| `nodes` | group (set) | IDs (inventory names) of the subscribed E2 nodes |
+| `node:<E2 node ID>` | key, UTF-8 JSON | the node and its subscribed RAN functions |
+
+A record is written when the subscription manager accepts a subscription (`status` `requested`), updated when it reports the outcome (`active` or `failed`), and removed when the subscriptions to the node are deleted (node disconnected). At start-up, records left by a previous run are removed. Example (`E2SM-CP`, attributes shortened):
+
+```json
+{"v": 1, "me_id": "gnb_208_099_00000e00", "plmn_id": "02F899", "nb_id": "...", "service_model": "E2SM-CP",
+ "updated_at_ms": 1763481600123,
+ "ran_functions": [{"ran_function_id": 2, "oid": "1.3.6.1.4.1.32473.1.1.2.1", "subscription_id": "...",
+                    "status": "active", "e2_instance_id": 1, "subscribed_at_ms": 1763481600050,
+                    "actions": [{"action_id": 1, "report_style": 1}],
+                    "ran_function": {"short_name": "...", "description": "...", "instance": 1, "schema_version": "mobiflow/1.0"},
+                    "event_trigger": {"max_batch_size": 5, "max_batch_delay_ms": 0},
+                    "attributes": [{"id": 1, "name": "rrc.establishment_cause", "type": "integer", "stability": "stable"}]}]}
+```
+
+An `E2SM-KPM` RAN function has `reporting_period_ms`, `granularity_period_ms` and `measurements` instead of `ran_function`, `event_trigger` and `attributes`. A `max_batch_*` of 0 means the limit is not set. Read them with:
+
+```
+/data # sdlcli get E2SM-CP node:gnb_208_099_00000e00
+/data # redis-cli SMEMBERS '{E2SM-CP},nodes'
+```
+
 Other xApps deployed at the nRT-RIC can also use RESTFul APIs to access these data in the SDL. Refer to our other xApp examples such as [MobieXpert](https://github.com/5GSEC/MobieXpert/tree/osc) and [MobiWatch](https://github.com/5GSEC/MobiWatch) to checkout the implementation.
 
 

@@ -18,7 +18,7 @@
 
 import json
 import requests
-from typing import List, Dict
+from typing import List, Dict, Optional
 from ricxappframe.xapp_frame import RMRXapp
 from ricxappframe.entities.rnib.nb_identity_pb2 import NbIdentity
 from ._BaseManager import _BaseManager
@@ -58,4 +58,46 @@ class SdlManager(_BaseManager):
 
     def store_data_to_sdl(self, ns: str, key: str, value):
         self._rmr_xapp.sdl.set(ns, key, value)
+
+    # ------------------------------------------------------------------
+    # E2 node registry: in the namespace of each service model (E2SM-CP,
+    # E2SM-KPM), the group NODES_GROUP lists the E2 nodes the xApp is
+    # subscribed to, and the key "node:<E2 node ID>" describes the node and
+    # its subscribed RAN functions (UTF-8 JSON, not msgpack, so that any
+    # xApp or redis-cli can read it).
+    # ------------------------------------------------------------------
+
+    NODES_GROUP = "nodes"
+
+    @staticmethod
+    def node_key(me_id: str) -> str:
+        return f"node:{me_id}"
+
+    def set_node(self, ns: str, me_id: str, record: dict):
+        """Adds or replaces the record of an E2 node."""
+        sdl = self._rmr_xapp.sdl
+        sdl.set(ns, self.node_key(me_id), json.dumps(record, sort_keys=True).encode(), usemsgpack=False)
+        sdl.add_member(ns, self.NODES_GROUP, me_id.encode(), usemsgpack=False)
+
+    def remove_node(self, ns: str, me_id: str):
+        """Removes the record of an E2 node (no-op if there is none)."""
+        sdl = self._rmr_xapp.sdl
+        sdl.remove_member(ns, self.NODES_GROUP, me_id.encode(), usemsgpack=False)
+        sdl.delete(ns, self.node_key(me_id))
+
+    def get_nodes(self, ns: str) -> List[str]:
+        """The E2 nodes listed in a namespace."""
+        members = self._rmr_xapp.sdl.get_members(ns, self.NODES_GROUP, usemsgpack=False) or set()
+        return sorted(m.decode() if isinstance(m, bytes) else str(m) for m in members)
+
+    def get_node(self, ns: str, me_id: str) -> Optional[Dict]:
+        """The record of an E2 node, None if there is none."""
+        value = self._rmr_xapp.sdl.get(ns, self.node_key(me_id), usemsgpack=False)
+        return json.loads(value) if value is not None else None
+
+    def clear_nodes(self, ns: str):
+        """Removes every E2 node record of a namespace."""
+        for me_id in self.get_nodes(ns):
+            self._rmr_xapp.sdl.delete(ns, self.node_key(me_id))
+        self._rmr_xapp.sdl.remove_group(ns, self.NODES_GROUP)
 
