@@ -1,7 +1,8 @@
 """
 Handles E2SM-CP (MobiFlow control plane telemetry) indications: decodes the
-indication header and message and logs every reported event, one line each.
-Nothing is stored yet.
+indication header and message, logs every reported event, one line each, and
+stores the events in the SDL (CpEventStore), with the message and attribute
+IDs resolved to names (layer_record).
 
 Log format (one line per indication, then one per event):
 
@@ -12,12 +13,12 @@ Log format (one line per indication, then one per event):
 
 import json
 import threading
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from mdclogpy import Level
 from ricxappframe.xapp_frame import RMRXapp
 from ..asn1 import AsnProxy
-from ..manager import SubscriptionManager
+from ..manager import SubscriptionManager, CpEventStore, CpEvent
 from ..mobiflow.encoding import decode_rrc_msg, nas_emm_code_NR
 from ..utils.utils import ntp_to_datetime, format_time
 from .IndicationHandler import E2Indication, ServiceModelIndicationHandler
@@ -60,45 +61,101 @@ def plmn_to_str(plmn_hex: str) -> str:
     return f"{mcc}-{mnc}"
 
 
-def message_name(msg: dict) -> str:
+def message_record(msg: Optional[dict]) -> dict:
+    """A decoded E2SM-CP MessageID with its names: proto (protocol), msg
+    (message name, None if unknown), code (message ID), and per protocol
+    outcome (interfaces), class (RRC), epd (NAS) or opaque (the reason)."""
     if msg is None:
-        return "unknown"
+        return {"proto": None}
     if "interface" in msg:
         iface, proc = msg["interface"], msg["procedure"]
-        name = F1AP_PROCEDURE.get(proc, "") if iface == 2 else ""
-        return (f"{INTERFACE.get(iface, f'interface{iface}')} {name or 'procedure'}({proc}) "
-                f"{OUTCOME.get(msg['outcome'], msg['outcome'])}")
+        return {"proto": INTERFACE.get(iface, f"interface{iface}"),
+                "msg": F1AP_PROCEDURE.get(proc) if iface == 2 else None,
+                "code": proc, "outcome": OUTCOME.get(msg["outcome"], msg["outcome"])}
     if "rrc_msg" in msg:
         if "rrc_nr_class" in msg:
             cls = msg["rrc_nr_class"]
-            name = ""
+            name = None
             if cls in RRC_NAMED_CLASSES:
                 dcch, downlink = RRC_NAMED_CLASSES[cls]
                 # E2SM-CP RRC message ID: position in the c1 CHOICE from 0;
                 # mobiflow.encoding counts from 1
-                name = decode_rrc_msg(dcch, downlink, msg["rrc_msg"] + 1, 1) or ""
-            return f"NR-RRC {RRC_NR_CLASS.get(cls, cls)} {name or 'message'}({msg['rrc_msg']})"
-        return f"LTE-RRC class{msg['rrc_lte_class']} message({msg['rrc_msg']})"
+                name = decode_rrc_msg(dcch, downlink, msg["rrc_msg"] + 1, 1) or None
+            return {"proto": "NR-RRC", "class": RRC_NR_CLASS.get(cls, cls), "msg": name, "code": msg["rrc_msg"]}
+        return {"proto": "LTE-RRC", "class": msg["rrc_lte_class"], "msg": None, "code": msg["rrc_msg"]}
     if "nas_msg" in msg:
         epd, mt = msg["nas_epd"], msg["nas_msg"]
-        name = nas_emm_code_NR.get(mt, "") if epd in NAS_EPD else ""
-        return f"NAS {NAS_EPD.get(epd, f'EPD{epd}')} {name or 'message'}(0x{mt:02x})"
+        return {"proto": "NAS", "epd": NAS_EPD.get(epd, f"EPD{epd}"),
+                "msg": (nas_emm_code_NR.get(mt) or None) if epd in NAS_EPD else None, "code": mt}
     if "opaque_protocol" in msg:
-        s = f"opaque {PROTOCOL.get(msg['opaque_protocol'], msg['opaque_protocol'])}"
+        rec = {"proto": PROTOCOL.get(msg["opaque_protocol"], msg["opaque_protocol"]),
+               "opaque": OPAQUE_REASON.get(msg["reason"], msg["reason"])}
         if "rrc_nr_class" in msg:
-            s += f" {RRC_NR_CLASS.get(msg['rrc_nr_class'], msg['rrc_nr_class'])}"
-        return f"{s} ({OPAQUE_REASON.get(msg['reason'], msg['reason'])})"
-    return json.dumps(msg, sort_keys=True)
+            rec["class"] = RRC_NR_CLASS.get(msg["rrc_nr_class"], msg["rrc_nr_class"])
+        return rec
+    return {"proto": None, "raw": msg}
+
+
+def message_name(msg: dict) -> str:
+    rec = message_record(msg)
+    proto = rec["proto"]
+    if "raw" in rec:
+        return json.dumps(msg, sort_keys=True)
+    if proto is None:
+        return "unknown"
+    if "opaque" in rec:
+        return f"opaque {proto}" + (f" {rec['class']}" if "class" in rec else "") + f" ({rec['opaque']})"
+    if "outcome" in rec:
+        return f"{proto} {rec['msg'] or 'procedure'}({rec['code']}) {rec['outcome']}"
+    if proto == "NR-RRC":
+        return f"NR-RRC {rec['class']} {rec['msg'] or 'message'}({rec['code']})"
+    if proto == "LTE-RRC":
+        return f"LTE-RRC class{rec['class']} message({rec['code']})"
+    return f"NAS {rec['epd']} {rec['msg'] or 'message'}(0x{rec['code']:02x})"
+
+
+def layer_record(layer: dict, attr_names: dict) -> dict:
+    """A message layer of an event, as stored: message_record, plus the
+    security protection and the attributes ({name: value}) when present."""
+    rec = message_record(layer.get("msg"))
+    if "protection" in layer:
+        rec["protection"] = PROTECTION.get(layer["protection"], layer["protection"])
+    attrs = layer.get("attrs")
+    if attrs:
+        rec["attrs"] = {attr_names.get(int(k), f"attr{k}"): v for k, v in attrs.items()}
+    return rec
+
+
+def cell_name(cell: Optional[dict]) -> Optional[str]:
+    """Decoded CGI -> "<MCC>-<MNC>:<cell ID>"."""
+    if not cell:
+        return None
+    return f"{plmn_to_str(cell.get('plmn', ''))}:{cell.get('nr_cell_id', cell.get('eutra_cell_id'))}"
+
+
+def is_ue_context_release(msg: Optional[dict]) -> bool:
+    """F1AP UE Context Release (command or complete)."""
+    return bool(msg) and msg.get("interface") == 2 and msg.get("procedure") == 6
+
+
+_UNIX_EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
+
+
+def unix_us(t: Optional[datetime]) -> Optional[int]:
+    return None if t is None else (t - _UNIX_EPOCH) // timedelta(microseconds=1)
 
 
 class CpIndicationHandler(ServiceModelIndicationHandler):
     """Handles E2SM-CP indications (dispatched by IndicationHandler)."""
 
-    def __init__(self, rmr_xapp: RMRXapp, asn_proxy: AsnProxy, sub_mgr: SubscriptionManager):
+    def __init__(self, rmr_xapp: RMRXapp, asn_proxy: AsnProxy, sub_mgr: SubscriptionManager,
+                 store: Optional[CpEventStore] = None):
+        """store: where the events are stored, None: logged only"""
         self.logger = rmr_xapp.logger
         self.logger.set_level(Level.INFO)
         self.asn_proxy = asn_proxy
         self.sub_mgr = sub_mgr
+        self.store = store
         self._lock = threading.Lock()
         self._streams = {}  # (me_id, RAN function ID) -> {"next_seq": int, "dropped": int}
 
@@ -134,6 +191,31 @@ class CpIndicationHandler(ServiceModelIndicationHandler):
         for _, line in sorted(events, key=lambda x: x[0]):
             self.logger.info(f"[E2SM-CP]   {line}")
 
+        if self.store is not None:
+            try:
+                self._store_events(indication, header, start, groups, attr_names)
+            except Exception as e:  # the indication is logged; storing is retried with the next one
+                self.logger.error(f"[E2SM-CP] {src}: failed to store indication SN {indication.sn} "
+                                  f"in the SDL: {e!r}")
+
+    def _store_events(self, indication: E2Indication, header: dict, start: Optional[datetime],
+                      groups: list, attr_names: dict):
+        start_us = unix_us(start)
+        events = []
+        for g in groups:
+            ue_ref = g.get("ue")
+            cell = cell_name(g.get("cell"))
+            for e in g.get("events", []):
+                t_us = start_us + e.get("time_offset_us", 0) if start_us is not None else None
+                layers = e.get("layers", [])
+                record = {"t_us": t_us, "dir": DIRECTION.get(e.get("direction")), "cell": cell,
+                          "layers": [layer_record(layer, attr_names) for layer in layers]}
+                release = ue_ref is not None and any(is_ue_context_release(layer.get("msg")) for layer in layers)
+                events.append(CpEvent(seq=e["seq"], t_us=t_us, ue_ref=ue_ref, cell=cell, record=record,
+                                      release=release))
+        header = dict(header, collection_start_ms=start_us // 1000 if start_us is not None else None)
+        self.store.store_indication(indication.me_id, indication.ran_function_id, header, events)
+
     def _check_stream(self, indication: E2Indication, src: str, header: dict, seqs: list):
         """Warns about events lost on the way (sequence gaps) or dropped by the E2 node."""
         key = (indication.me_id, indication.ran_function_id)
@@ -167,10 +249,9 @@ class CpIndicationHandler(ServiceModelIndicationHandler):
                     parts.append(f"{label}={ue[key]}")
         else:
             parts.append("ue=-")
-        cell = group.get("cell")
+        cell = cell_name(group.get("cell"))
         if cell:
-            cell_id = cell.get("nr_cell_id", cell.get("eutra_cell_id"))
-            parts.append(f"cell={plmn_to_str(cell.get('plmn', ''))}:{cell_id}")
+            parts.append(f"cell={cell}")
         return " ".join(parts)
 
     @staticmethod

@@ -145,8 +145,12 @@ class HWXapp:
         SubscriptionHandler(self._rmr_xapp, Constants.SUBSCRIPTION_REQ)
         # E2AP layer; hands each indication to the handler of its service model
         IndicationHandler(self._rmr_xapp, Constants.INDICATION_REQ, self.asn_proxy, self.sub_mgr, {
-            Constants.SM_KPM: KpmIndicationHandler(self._rmr_xapp, self.asn_proxy, self.sub_mgr),
-            Constants.SM_CP: CpIndicationHandler(self._rmr_xapp, self.asn_proxy, self.sub_mgr),
+            Constants.SM_KPM: KpmIndicationHandler(self._rmr_xapp, self.asn_proxy, self.sub_mgr,
+                                                   KpmRecordStore(self.sdl_mgr, self.ran_config.sdl,
+                                                                  self._rmr_xapp.logger)),
+            Constants.SM_CP: CpIndicationHandler(self._rmr_xapp, self.asn_proxy, self.sub_mgr,
+                                                 CpEventStore(self.sdl_mgr, self.ran_config.sdl,
+                                                              self._rmr_xapp.logger)),
         })
 
     def start(self, thread=False):

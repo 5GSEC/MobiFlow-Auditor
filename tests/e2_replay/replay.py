@@ -9,7 +9,8 @@ its log.
      subscription manager REST API is simulated, the request it would get is
      printed). E2SM-KPM: reporting period 10 s, granularity period 1 s.
   2. Every RIC indication goes through IndicationHandler (E2AP layer) to
-     CpIndicationHandler or KpmIndicationHandler, which log them.
+     CpIndicationHandler or KpmIndicationHandler, which log them and store
+     them in an in-memory SDL; its content is summarized at the end.
 
 The ricxappframe and mdclogpy modules are stubbed, so only the wrappers are
 needed:  src/asn1/wrapper_compile.sh
@@ -60,9 +61,9 @@ xapp_frame.rmr.RMR_MS_PAYLOAD, xapp_frame.rmr.RMR_MS_MEID = "payload", "meid"
 sys.path.insert(0, REPO)
 from src.asn1 import StandardAsnProxy  # noqa: E402
 from src.handler import IndicationHandler, CpIndicationHandler, KpmIndicationHandler  # noqa: E402
-from src.manager.SubscriptionManager import SubscriptionManager  # noqa: E402
+from src.manager import SdlManager, SubscriptionManager, CpEventStore, KpmRecordStore  # noqa: E402
 from src.utils.constants import Constants  # noqa: E402
-from src.utils.config import RanConfig, KpmConfig  # noqa: E402
+from src.utils.config import RanConfig, KpmConfig, SdlConfig  # noqa: E402
 
 
 class Logger:
@@ -89,10 +90,59 @@ class Logger:
         pass
 
 
+class FakeSdlStorage:
+    """In-memory stand-in for the ricsdl SyncStorage, namespaces kept apart."""
+
+    def __init__(self):
+        self.data = {}    # (namespace, key) -> bytes
+        self.groups = {}  # (namespace, group) -> set of bytes
+
+    @staticmethod
+    def _set_of(items, kind):
+        items = {items} if isinstance(items, kind) else set(items)
+        assert all(isinstance(i, kind) for i in items), items
+        return items
+
+    def set(self, ns, data_map):
+        assert all(isinstance(v, bytes) for v in data_map.values())
+        self.data.update({(ns, k): v for k, v in data_map.items()})
+
+    def get(self, ns, keys):
+        return {k: self.data[(ns, k)] for k in self._set_of(keys, str) if (ns, k) in self.data}
+
+    def remove(self, ns, keys):
+        for k in self._set_of(keys, str):
+            self.data.pop((ns, k), None)
+
+    def add_member(self, ns, group, members):
+        self.groups.setdefault((ns, group), set()).update(self._set_of(members, bytes))
+
+    def remove_member(self, ns, group, members):
+        self.groups.get((ns, group), set()).difference_update(self._set_of(members, bytes))
+
+    def remove_group(self, ns, group):
+        self.groups.pop((ns, group), None)
+
+    def get_members(self, ns, group):
+        return set(self.groups.get((ns, group), set()))
+
+    def summary(self):
+        counts = {}
+        for ns, key in self.data:
+            prefix = (ns, key.split(":")[0])
+            counts[prefix] = counts.get(prefix, 0) + 1
+        for ns, group in self.groups:
+            if self.groups[(ns, group)]:
+                prefix = (ns, group.split(":")[0] + " (group)")
+                counts[prefix] = counts.get(prefix, 0) + 1
+        return counts
+
+
 class FakeXapp:
     def __init__(self):
         self.logger = Logger()
         self.callbacks = {}
+        self.sdl = types.SimpleNamespace(_sdl=FakeSdlStorage())
 
     def register_callback(self, cb, msgtype):
         self.callbacks[msgtype] = cb
@@ -128,8 +178,10 @@ def main():
 
     with mock.patch.object(SubscriptionManager, "regsiter_subscription_handler"), \
             mock.patch("requests.post", fake_post):
-        sub_mgr = SubscriptionManager(xapp, asn, mock.MagicMock(),
-                                      RanConfig(kpm=KpmConfig(reporting_period_ms=10000, granularity_period_ms=1000)))
+        sdl_mgr = SdlManager(xapp)
+        config = RanConfig(kpm=KpmConfig(reporting_period_ms=10000, granularity_period_ms=1000),
+                           sdl=SdlConfig(cp_max_events_per_node=100))
+        sub_mgr = SubscriptionManager(xapp, asn, sdl_mgr, config)
         nb = types.SimpleNamespace(inventory_name=ME_ID, connection_status=1)
         for rf in ran_functions(asn, pdus[0]):
             if sub_mgr.service_model_of(rf["ranFunctionOid"]) is not None:
@@ -140,13 +192,21 @@ def main():
              "TimeoutType": ""}]}).encode())
 
     IndicationHandler(xapp, Constants.INDICATION_REQ, asn, sub_mgr, {
-        Constants.SM_KPM: KpmIndicationHandler(xapp, asn, sub_mgr),
-        Constants.SM_CP: CpIndicationHandler(xapp, asn, sub_mgr),
+        Constants.SM_KPM: KpmIndicationHandler(xapp, asn, sub_mgr, KpmRecordStore(sdl_mgr, config.sdl, xapp.logger)),
+        Constants.SM_CP: CpIndicationHandler(xapp, asn, sub_mgr, CpEventStore(sdl_mgr, config.sdl, xapp.logger)),
     })
     handler = xapp.callbacks[Constants.INDICATION_REQ]
     for pdu in pdus[1:]:
         if "RICindication" in json.dumps(asn.decode_e2ap_pdu(pdu)):
             handler(xapp, {"payload": bytes.fromhex(pdu), "meid": ME_ID.encode()}, None)
+
+    storage = xapp.sdl._sdl
+    print("SDL keys and groups (CP events: at most 100 kept):")
+    for (ns, prefix), n in sorted(storage.summary().items()):
+        print(f"  {ns:9} {prefix:14} {n}")
+    for ns, key in (("E2SM-CP", f"stream:{ME_ID}"), ("E2SM-KPM", f"latest:{ME_ID}")):
+        if (ns, key) in storage.data:
+            print(f"  {ns} {key} = {storage.data[(ns, key)].decode()}")
     return 1 if xapp.logger.errors else 0
 
 

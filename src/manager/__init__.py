@@ -20,6 +20,8 @@ from .A1PolicyManager import A1PolicyManager
 from .SdlAlarmManager import SdlAlarmManager
 from .SdlManager import SdlManager
 from .SubscriptionManager import SubscriptionManager
+from .CpEventStore import CpEventStore, CpEvent
+from .KpmRecordStore import KpmRecordStore
 from .MetricManager import MetricManager
 
 

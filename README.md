@@ -32,8 +32,8 @@ MobiFlow Auditor also subscribes to **E2SM-CP** (OID `1.3.6.1.4.1.32473.1.1.2.1`
 
 - The RAN functions to subscribe to are listed by OID in `ran.target_oid_list` ([init/config-file.json](./init/config-file.json)); each is subscribed with the service model of its OID (exact match: `1.3.6.1.4.1.53148.1.2.2.2` E2SM-KPM, `1.3.6.1.4.1.32473.1.1.2.1` E2SM-CP; other OIDs are skipped with a warning). E2SM-CP RAN functions are subscribed with every report style and attribute they define.
 - RIC indications are decoded at the E2AP layer by [IndicationHandler](./src/handler/IndicationHandler.py) and handed to [KpmIndicationHandler](./src/handler/KpmIndicationHandler.py) or [CpIndicationHandler](./src/handler/CpIndicationHandler.py) depending on the subscription's service model.
-- E2SM-CP events are only logged for now (`[E2SM-CP]` lines); they are not stored in the SDL.
-- E2SM-KPM carries only 3GPP measurements (TS 28.552, e.g. `RRC.ConnEstabAtt`), no MobiFlow telemetry: the xApp subscribes to every measurement of the first report style with action definition format 1 (E2 Node Measurement). The E2 node sends an indication every reporting period, with one record per granularity period: `ran.e2sm_kpm.reporting_period_ms` (event trigger) and `ran.e2sm_kpm.granularity_period_ms` (action definition), which must divide the reporting period. The measurements are only logged for now (`[E2SM-KPM]` lines).
+- E2SM-CP events are logged (`[E2SM-CP]` lines) and stored in the SDL namespace `E2SM-CP` (see [SDL Database](#sdl-database)).
+- E2SM-KPM carries only 3GPP measurements (TS 28.552, e.g. `RRC.ConnEstabAtt`), no MobiFlow telemetry: the xApp subscribes to every measurement of the first report style with action definition format 1 (E2 Node Measurement). The E2 node sends an indication every reporting period, with one record per granularity period: `ran.e2sm_kpm.reporting_period_ms` (event trigger) and `ran.e2sm_kpm.granularity_period_ms` (action definition), which must divide the reporting period. The measurements are logged (`[E2SM-KPM]` lines) and stored in the SDL namespace `E2SM-KPM`, one record per granularity period.
 - The E2SM-CP ASN.1 code is generated into `src/asn1/e2sm_cp` (`asn1_compile_cp.sh`) and built into its own wrapper, `src/asn1/wrapper_cp` (`wrapper_compile.sh`).
 - `tests/e2_replay/replay.py` replays E2AP PDUs recorded from the agent (E2SM-CP and E2SM-KPM) through the xApp code, without a RIC, and prints the log.
 
@@ -49,6 +49,9 @@ The `ran` section of [init/config-file.json](./init/config-file.json) configures
 | `e2sm_kpm.granularity_period_ms` | the reporting period | E2SM-KPM measurement record period (action definition); must divide the reporting period |
 | `e2sm_cp.max_batch_size` | `0` | E2SM-CP: report once this many events are pending (`0`: no limit, `1..65535`) |
 | `e2sm_cp.max_batch_delay_ms` | `0` | E2SM-CP: report once this long has elapsed since the first pending event (`0`: no limit) |
+| `sdl.cp_max_events_per_node` | `100000` | E2SM-CP events kept in the SDL per E2 node; the oldest are removed beyond it |
+| `sdl.cp_ue_retention_s` | `600` | An E2SM-CP UE context is removed from the SDL this long after the UE's last event |
+| `sdl.kpm_retention_s` | `3600` | E2SM-KPM records older than this (from the newest record of the node) are removed from the SDL |
 
 With both E2SM-CP limits at `0`, each event is reported in its own indication as it occurs. The settings apply to subscriptions made after the xApp starts; the config file is read from the image (`/tmp/init/config-file.json`), so a change needs a rebuild.
 
@@ -231,6 +234,41 @@ An `E2SM-KPM` RAN function has `reporting_period_ms`, `granularity_period_ms` an
 /data # sdlcli get E2SM-CP node:gnb_208_099_00000e00
 /data # redis-cli SMEMBERS '{E2SM-CP},nodes'
 ```
+
+### E2SM-CP events
+
+In the `E2SM-CP` namespace, besides the node records (all values UTF-8 JSON, with the message and attribute IDs resolved to names):
+
+| Key | Type | Content |
+|---|---|---|
+| `stream:<me>` | key | the event stream of an E2 node: `head` (index of the newest event), `low` (index of the oldest event kept), `epoch`, `next_seq`, `dropped` (reported by the E2 node), `lost` (sequence gaps) |
+| `ev:<me>:<index>` | key | one event; `index` (10 digits) is assigned by the xApp and contiguous per E2 node |
+| `ue:<me>:<ranUEID>` | key | the context of one UE connection: F1AP IDs, C-RNTI, cell, first and last event, event count, `released_t_us` (F1AP UE Context Release) |
+| `ues:<me>` | group | the ranUEIDs that have a UE context |
+| `ue_ev:<me>:<ranUEID>` | group | the event indexes of a UE |
+
+```json
+{"v": 1, "idx": 7, "epoch": 1794525075827, "seq": 7, "ue": "6af6479300000001", "t_us": 1794525075836210,
+ "dir": "UL", "cell": "208-99:12345678",
+ "layers": [{"proto": "F1AP", "msg": "InitialULRRCMessageTransfer", "code": 11, "outcome": "initiating",
+             "attrs": {"f1ap.c_rnti": 58803}},
+            {"proto": "NR-RRC", "class": "UL-CCCH", "msg": "RRCSetupRequest", "code": 0,
+             "attrs": {"rrc.establishment_cause": 3}}]}
+```
+
+To follow the events of a node, read `stream:<me>`, then the events from the last index read + 1 to `head` (those below `low` have been removed). For the events of one UE, read the `ue_ev:<me>:<ranUEID>` group and the listed events (skipping removed ones). `seq` is the E2 node's sequence number, which starts over when the xApp subscribes again; `epoch` (the collection start time, in ms, of the first indication after that) tells such runs apart, while the index keeps growing.
+
+### E2SM-KPM records
+
+In the `E2SM-KPM` namespace, one record per granularity period:
+
+| Key | Type | Content |
+|---|---|---|
+| `rec:<me>:<start_ms>` | key | `{"v": 1, "me_id", "ran_function_id", "start_ms", "granularity_ms", "values": {<measurement>: <value or null>}}`; `start_ms` (13 digits) is the Unix time of the period start |
+| `recs:<me>` | group | the `start_ms` of the stored records |
+| `latest:<me>` | key | a copy of the newest record |
+
+The SDL has no expiry: the xApp removes old events, UE contexts and records itself (see `sdl.*` in the RAN configuration).
 
 Other xApps deployed at the nRT-RIC can also use RESTFul APIs to access these data in the SDL. Refer to our other xApp examples such as [MobieXpert](https://github.com/5GSEC/MobieXpert/tree/osc) and [MobiWatch](https://github.com/5GSEC/MobiWatch) to checkout the implementation.
 

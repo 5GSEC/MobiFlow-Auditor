@@ -1,13 +1,15 @@
 """
 The "ran" section of the xApp config file (init/config-file.json): which RAN
 functions to subscribe to, how often to poll the R-NIB for E2 nodes, and the
-subscription settings of each service model.
+subscription settings of each service model, and how much of the reported
+data is kept in the SDL.
 
     "ran": {
         "target_oid_list": ["1.3.6.1.4.1.53148.1.2.2.2", "1.3.6.1.4.1.32473.1.1.2.1"],
         "poll_interval_ms": 5000,
         "e2sm_kpm": {"reporting_period_ms": 10000, "granularity_period_ms": 1000},
-        "e2sm_cp": {"max_batch_size": 0, "max_batch_delay_ms": 0}
+        "e2sm_cp": {"max_batch_size": 0, "max_batch_delay_ms": 0},
+        "sdl": {"cp_max_events_per_node": 100000, "cp_ue_retention_s": 600, "kpm_retention_s": 3600}
     }
 
 Every key is optional: a missing key takes its default. A value of the wrong
@@ -21,7 +23,7 @@ from typing import Callable, Optional, Tuple
 
 from .constants import Constants
 
-__all__ = ["ConfigError", "KpmConfig", "CpConfig", "RanConfig"]
+__all__ = ["ConfigError", "KpmConfig", "CpConfig", "SdlConfig", "RanConfig"]
 
 _UINT32_MAX = 4294967295
 
@@ -114,6 +116,39 @@ class CpConfig:
 
 
 @dataclass(frozen=True)
+class SdlConfig:
+    """
+    Retention of the data stored in the SDL (the SDL has no expiry, the xApp
+    removes old data itself):
+      cp_max_events_per_node: E2SM-CP events kept per E2 node, the oldest
+        are removed beyond it
+      cp_ue_retention_s: an E2SM-CP UE context (and its event index) is
+        removed this long after the last event of the UE
+      kpm_retention_s: E2SM-KPM records older than this (from the newest
+        record of the E2 node) are removed
+    """
+    SECTION = "ran.sdl"
+
+    cp_max_events_per_node: int = 100000
+    cp_ue_retention_s: int = 600
+    kpm_retention_s: int = 3600
+
+    def __post_init__(self):
+        for name in ("cp_max_events_per_node", "cp_ue_retention_s", "kpm_retention_s"):
+            if getattr(self, name) < 1:
+                raise ConfigError(f"{self.SECTION}.{name} must be >= 1, got {getattr(self, name)}")
+
+    @classmethod
+    def from_dict(cls, d, warn: Callable[[str], None] = _ignore) -> "SdlConfig":
+        d = _check_section(cls.SECTION, d)
+        _warn_unknown_keys(cls.SECTION, d, ("cp_max_events_per_node", "cp_ue_retention_s", "kpm_retention_s"), warn)
+        return cls(cp_max_events_per_node=_get_int(cls.SECTION, d, "cp_max_events_per_node",
+                                                   cls.cp_max_events_per_node, 1),
+                   cp_ue_retention_s=_get_int(cls.SECTION, d, "cp_ue_retention_s", cls.cp_ue_retention_s, 1),
+                   kpm_retention_s=_get_int(cls.SECTION, d, "kpm_retention_s", cls.kpm_retention_s, 1))
+
+
+@dataclass(frozen=True)
 class RanConfig:
     """
     target_oid_list: OIDs of the RAN functions to subscribe to, each one of a
@@ -128,15 +163,18 @@ class RanConfig:
     poll_interval_ms: int = 5000
     kpm: KpmConfig = field(default_factory=KpmConfig)
     cp: CpConfig = field(default_factory=CpConfig)
+    sdl: SdlConfig = field(default_factory=SdlConfig)
 
     @classmethod
     def from_dict(cls, d, warn: Callable[[str], None] = _ignore) -> "RanConfig":
         d = _check_section(cls.SECTION, d)
-        _warn_unknown_keys(cls.SECTION, d, ("target_oid_list", "poll_interval_ms", "e2sm_kpm", "e2sm_cp"), warn)
+        _warn_unknown_keys(cls.SECTION, d, ("target_oid_list", "poll_interval_ms", "e2sm_kpm", "e2sm_cp", "sdl"),
+                           warn)
         return cls(target_oid_list=cls._target_oids(d, warn),
                    poll_interval_ms=_get_int(cls.SECTION, d, "poll_interval_ms", cls.poll_interval_ms, 100),
                    kpm=KpmConfig.from_dict(d.get("e2sm_kpm"), warn),
-                   cp=CpConfig.from_dict(d.get("e2sm_cp"), warn))
+                   cp=CpConfig.from_dict(d.get("e2sm_cp"), warn),
+                   sdl=SdlConfig.from_dict(d.get("sdl"), warn))
 
     @classmethod
     def _target_oids(cls, d: dict, warn: Callable[[str], None]) -> Tuple[str, ...]:

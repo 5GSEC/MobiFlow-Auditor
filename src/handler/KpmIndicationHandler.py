@@ -1,7 +1,7 @@
 """
 Handles E2SM-KPM indications (format 1, E2 Node Measurement): decodes the
-indication header and message and logs the reported measurements. Nothing is
-stored yet; MobiFlow telemetry comes over E2SM-CP (CpIndicationHandler).
+indication header and message, logs the reported measurements and stores
+them in the SDL (KpmRecordStore), one record per granularity period.
 
 An indication covers one reporting period, with one record of measurement
 values per granularity period. Log format (one line per indication, then one
@@ -17,7 +17,7 @@ from typing import Optional
 from mdclogpy import Level
 from ricxappframe.xapp_frame import RMRXapp
 from ..asn1 import AsnProxy
-from ..manager import SubscriptionManager
+from ..manager import SubscriptionManager, KpmRecordStore
 from ..utils.utils import find_all_values, ntp_to_datetime, format_time
 from .IndicationHandler import E2Indication, ServiceModelIndicationHandler
 
@@ -69,11 +69,14 @@ def measurement_names(fmt1: dict) -> list:
 class KpmIndicationHandler(ServiceModelIndicationHandler):
     """Handles E2SM-KPM indications (dispatched by IndicationHandler)."""
 
-    def __init__(self, rmr_xapp: RMRXapp, asn_proxy: AsnProxy, sub_mgr: SubscriptionManager):
+    def __init__(self, rmr_xapp: RMRXapp, asn_proxy: AsnProxy, sub_mgr: SubscriptionManager,
+                 store: Optional[KpmRecordStore] = None):
+        """store: where the records are stored, None: logged only"""
         self.logger = rmr_xapp.logger
         self.logger.set_level(Level.INFO)
         self.asn_proxy = asn_proxy
         self.sub_mgr = sub_mgr
+        self.store = store
 
     def handle_indication(self, indication: E2Indication):
         src = f"{indication.me_id} RAN function {indication.ran_function_id}"
@@ -115,6 +118,7 @@ class KpmIndicationHandler(ServiceModelIndicationHandler):
                          f"{len(records)} records of {period} from {format_time(start)}, totals "
                          + (" ".join(f"{n}={totals.get(n, 0)}" for n in names) or "-"))
 
+        to_store = []
         for i, record in enumerate(records):
             t = start + timedelta(milliseconds=i * granul_ms) if start is not None and granul_ms else None
             if len(record) != len(names):
@@ -123,3 +127,17 @@ class KpmIndicationHandler(ServiceModelIndicationHandler):
                 continue
             values = " ".join(f"{n}={'-' if v is None else v}" for n, v in zip(names, record))
             self.logger.info(f"[E2SM-KPM]   record {i} {format_time(t)} {values}")
+            if t is not None:
+                to_store.append((round(t.timestamp() * 1000), dict(zip(names, record))))
+
+        if self.store is None or not records:
+            return
+        if start is None or not granul_ms:
+            self.logger.warning(f"[E2SM-KPM] {src}: indication SN {indication.sn} not stored: no collection "
+                                f"start time or granularity period to date its records")
+            return
+        try:
+            self.store.store_records(indication.me_id, indication.ran_function_id, granul_ms, to_store)
+        except Exception as e:  # the indication is logged; storing is retried with the next one
+            self.logger.error(f"[E2SM-KPM] {src}: failed to store indication SN {indication.sn} "
+                              f"in the SDL: {e!r}")

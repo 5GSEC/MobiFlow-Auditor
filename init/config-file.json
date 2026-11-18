@@ -69,6 +69,11 @@
         "e2sm_cp": {
             "max_batch_size": 5,
             "max_batch_delay_ms": 0
+        },
+        "sdl": {
+            "cp_max_events_per_node": 100000,
+            "cp_ue_retention_s": 600,
+            "kpm_retention_s": 3600
         }
     }
 }
